@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * ระบบทำนายอัตราเลือดชิดสำหรับปศุสัตว์
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import type { PedigreeNode as __PedigreeNode } from './pedigreeNode';
 
@@ -12,6 +12,8 @@ export interface PedigreeNode {
   name: string;
   code: string;
   sex: string;
+  /** @nullable */
+  fCoefficient?: number | null;
   sire?: __PedigreeNode;
   dam?: __PedigreeNode;
 }

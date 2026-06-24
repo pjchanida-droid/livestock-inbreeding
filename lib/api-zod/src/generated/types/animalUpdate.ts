@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * ระบบทำนายอัตราเลือดชิดสำหรับปศุสัตว์
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import type { AnimalUpdateSex } from './animalUpdateSex';
 
@@ -13,6 +13,7 @@ export interface AnimalUpdate {
   code?: string;
   species?: string;
   sex?: AnimalUpdateSex;
+  farm?: string;
   birthDate?: string;
   notes?: string;
   /** @nullable */

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Calculator, Dna, Info } from "lucide-react";
+import { Calculator, Dna, Info, Activity } from "lucide-react";
 import { RiskBadge } from "@/components/ui/risk-badge";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
@@ -115,12 +115,28 @@ export default function Calculate() {
                 </div>
               </CardHeader>
               <CardContent className="pt-6 space-y-6">
-                <div className="flex flex-col items-center justify-center p-8 bg-muted/30 rounded-xl border border-border/50">
-                  <div className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">Wright's Inbreeding Coefficient</div>
-                  <div className="text-6xl font-black tabular-nums tracking-tight mb-2">
-                    {result.fPercent?.toFixed(2)}%
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-muted/20 rounded-lg p-4 border border-border">
+                    <div className="text-sm font-medium text-muted-foreground mb-1">ค่าเลือดชิดของพ่อพันธุ์เอง</div>
+                    <div className="text-2xl font-bold">{result.fSirePercent?.toFixed(2)}%</div>
+                    <div className="text-xs text-muted-foreground">F = {result.fSire?.toFixed(4)}</div>
                   </div>
-                  <div className="text-sm text-muted-foreground">F = {result.fCoefficient.toFixed(4)}</div>
+                  <div className="bg-muted/20 rounded-lg p-4 border border-border">
+                    <div className="text-sm font-medium text-muted-foreground mb-1">ค่าเลือดชิดของแม่พันธุ์เอง</div>
+                    <div className="text-2xl font-bold">{result.fDamPercent?.toFixed(2)}%</div>
+                    <div className="text-xs text-muted-foreground">F = {result.fDam?.toFixed(4)}</div>
+                  </div>
+                  <div className="bg-muted/20 rounded-lg p-4 border border-border">
+                    <div className="text-sm font-medium text-muted-foreground mb-1">ค่าความสัมพันธ์ระหว่างคู่ผสม (R)</div>
+                    <div className="text-2xl font-bold text-secondary">{result.rPercent?.toFixed(2)}%</div>
+                    <div className="text-xs text-muted-foreground">R = {result.rCoefficient?.toFixed(4)}</div>
+                  </div>
+                  <div className="bg-primary/10 rounded-lg p-4 border border-primary/20">
+                    <div className="text-sm font-medium text-primary mb-1">ค่าเลือดชิดของลูกที่คาดการณ์ (F)</div>
+                    <div className="text-3xl font-black text-primary">{result.fPercent?.toFixed(2)}%</div>
+                    <div className="text-xs text-primary/70">F = {result.fCoefficient?.toFixed(4)}</div>
+                  </div>
                 </div>
 
                 {result.commonAncestors.length > 0 && (
@@ -146,7 +162,9 @@ export default function Calculate() {
                 
                 {result.pathways.length > 0 && (
                   <div>
-                    <h3 className="font-bold text-lg mb-3">เส้นทางความสัมพันธ์ (Pathways)</h3>
+                    <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-primary" /> เส้นทางความสัมพันธ์ (Pathways)
+                    </h3>
                     <div className="space-y-2 font-mono text-sm bg-slate-900 text-slate-200 p-4 rounded-lg overflow-x-auto">
                       {result.pathways.map((path, idx) => (
                         <div key={idx}>{path}</div>

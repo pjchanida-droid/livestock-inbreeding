@@ -3,9 +3,12 @@
  * Do not edit manually.
  * Api
  * ระบบทำนายอัตราเลือดชิดสำหรับปศุสัตว์
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 
+export * from './aMatrixAnimal';
+export * from './aMatrixRequest';
+export * from './aMatrixResult';
 export * from './animal';
 export * from './animalInput';
 export * from './animalInputSex';
@@ -15,10 +18,12 @@ export * from './animalUpdateSex';
 export * from './commonAncestor';
 export * from './errorResponse';
 export * from './healthStatus';
+export * from './importResult';
 export * from './inbreedingHistory';
 export * from './inbreedingRequest';
 export * from './inbreedingResult';
 export * from './inbreedingResultRiskLevel';
 export * from './inbreedingStats';
+export * from './listAnimalsParams';
 export * from './pedigreeNode';
 export * from './riskBreakdownItem';

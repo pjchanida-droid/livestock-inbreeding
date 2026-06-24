@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * ระบบทำนายอัตราเลือดชิดสำหรับปศุสัตว์
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import type { AnimalSex } from './animalSex';
 
@@ -13,6 +13,8 @@ export interface Animal {
   code: string;
   species: string;
   sex: AnimalSex;
+  /** @nullable */
+  farm?: string | null;
   /** @nullable */
   birthDate?: string | null;
   /** @nullable */
@@ -25,5 +27,10 @@ export interface Animal {
   sireName?: string | null;
   /** @nullable */
   damName?: string | null;
+  /**
+     * Animal's own inbreeding coefficient
+     * @nullable
+     */
+  fCoefficient?: number | null;
   createdAt: string;
 }

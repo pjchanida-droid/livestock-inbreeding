@@ -3,13 +3,12 @@
  * Do not edit manually.
  * Api
  * ระบบทำนายอัตราเลือดชิดสำหรับปศุสัตว์
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import * as zod from 'zod';
 
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -20,18 +19,24 @@ export const HealthCheckResponse = zod.object({
 /**
  * @summary List all animals
  */
+export const ListAnimalsQueryParams = zod.object({
+  "farm": zod.coerce.string().optional()
+})
+
 export const ListAnimalsResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "code": zod.string(),
   "species": zod.string(),
   "sex": zod.enum(['male', 'female']),
+  "farm": zod.string().nullish(),
   "birthDate": zod.string().nullish(),
   "notes": zod.string().nullish(),
   "sireId": zod.number().nullish(),
   "damId": zod.number().nullish(),
   "sireName": zod.string().nullish(),
   "damName": zod.string().nullish(),
+  "fCoefficient": zod.number().nullish().describe('Animal\'s own inbreeding coefficient'),
   "createdAt": zod.string()
 })
 export const ListAnimalsResponse = zod.array(ListAnimalsResponseItem)
@@ -50,11 +55,19 @@ export const CreateAnimalBody = zod.object({
   "code": zod.string().min(1),
   "species": zod.string().min(1),
   "sex": zod.enum(['male', 'female']),
+  "farm": zod.string().optional(),
   "birthDate": zod.string().optional(),
   "notes": zod.string().optional(),
   "sireId": zod.number().nullish(),
   "damId": zod.number().nullish()
 })
+
+
+/**
+ * @summary List all unique farm names
+ */
+export const ListFarmsResponseItem = zod.string()
+export const ListFarmsResponse = zod.array(ListFarmsResponseItem)
 
 
 /**
@@ -70,12 +83,14 @@ export const GetAnimalResponse = zod.object({
   "code": zod.string(),
   "species": zod.string(),
   "sex": zod.enum(['male', 'female']),
+  "farm": zod.string().nullish(),
   "birthDate": zod.string().nullish(),
   "notes": zod.string().nullish(),
   "sireId": zod.number().nullish(),
   "damId": zod.number().nullish(),
   "sireName": zod.string().nullish(),
   "damName": zod.string().nullish(),
+  "fCoefficient": zod.number().nullish().describe('Animal\'s own inbreeding coefficient'),
   "createdAt": zod.string()
 })
 
@@ -95,6 +110,7 @@ export const UpdateAnimalBody = zod.object({
   "code": zod.string().optional(),
   "species": zod.string().optional(),
   "sex": zod.enum(['male', 'female']).optional(),
+  "farm": zod.string().optional(),
   "birthDate": zod.string().optional(),
   "notes": zod.string().optional(),
   "sireId": zod.number().nullish(),
@@ -107,12 +123,14 @@ export const UpdateAnimalResponse = zod.object({
   "code": zod.string(),
   "species": zod.string(),
   "sex": zod.enum(['male', 'female']),
+  "farm": zod.string().nullish(),
   "birthDate": zod.string().nullish(),
   "notes": zod.string().nullish(),
   "sireId": zod.number().nullish(),
   "damId": zod.number().nullish(),
   "sireName": zod.string().nullish(),
   "damName": zod.string().nullish(),
+  "fCoefficient": zod.number().nullish().describe('Animal\'s own inbreeding coefficient'),
   "createdAt": zod.string()
 })
 
@@ -137,13 +155,14 @@ export const GetAnimalPedigreeResponse = zod.object({
   "name": zod.string(),
   "code": zod.string(),
   "sex": zod.string(),
+  "fCoefficient": zod.number().nullish(),
   "sire": zod.unknown().optional(),
   "dam": zod.unknown().optional()
 })
 
 
 /**
- * @summary Calculate inbreeding coefficient (F) for a potential mating pair
+ * @summary Calculate inbreeding coefficient (F) for a potential mating pair using A-matrix
  */
 export const CalculateInbreedingBody = zod.object({
   "sireId": zod.number(),
@@ -155,8 +174,14 @@ export const CalculateInbreedingResponse = zod.object({
   "damId": zod.number(),
   "sireName": zod.string(),
   "damName": zod.string(),
-  "fCoefficient": zod.number().describe('Wright\'s inbreeding coefficient F (0-1)'),
-  "fPercent": zod.number().optional().describe('F coefficient as percentage'),
+  "fCoefficient": zod.number().describe('Predicted inbreeding coefficient of offspring F = 0.5 \* A[sire][dam]'),
+  "fPercent": zod.number().optional(),
+  "rCoefficient": zod.number().describe('Relationship coefficient R between sire and dam'),
+  "rPercent": zod.number().optional(),
+  "fSire": zod.number().describe('Inbreeding coefficient of the sire itself'),
+  "fSirePercent": zod.number().optional(),
+  "fDam": zod.number().describe('Inbreeding coefficient of the dam itself'),
+  "fDamPercent": zod.number().optional(),
   "riskLevel": zod.enum(['safe', 'low', 'moderate', 'high', 'very_high']),
   "riskLabel": zod.string().optional(),
   "commonAncestors": zod.array(zod.object({
@@ -180,6 +205,10 @@ export const ListInbreedingHistoryResponseItem = zod.object({
   "damName": zod.string(),
   "fCoefficient": zod.number(),
   "fPercent": zod.number().optional(),
+  "rCoefficient": zod.number().nullish(),
+  "rPercent": zod.number().nullish(),
+  "fSire": zod.number().nullish(),
+  "fDam": zod.number().nullish(),
   "riskLevel": zod.string(),
   "riskLabel": zod.string().optional(),
   "calculatedAt": zod.string()
@@ -188,7 +217,7 @@ export const ListInbreedingHistoryResponse = zod.array(ListInbreedingHistoryResp
 
 
 /**
- * @summary Get summary statistics for inbreeding across all animals
+ * @summary Get summary statistics
  */
 export const GetInbreedingStatsResponse = zod.object({
   "totalAnimals": zod.number(),
@@ -200,6 +229,26 @@ export const GetInbreedingStatsResponse = zod.object({
   "level": zod.string(),
   "label": zod.string(),
   "count": zod.number()
+}))
+})
+
+
+/**
+ * @summary Compute full Additive Relationship Matrix for a set of animals
+ */
+export const ComputeAMatrixBody = zod.object({
+  "farm": zod.string().optional().describe('Filter by farm; if omitted, uses all animals')
+})
+
+export const ComputeAMatrixResponse = zod.object({
+  "animals": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "code": zod.string(),
+  "sex": zod.string(),
+  "farm": zod.string().nullish(),
+  "fCoefficient": zod.number(),
+  "fPercent": zod.number()
 }))
 })
 

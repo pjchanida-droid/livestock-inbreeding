@@ -1,0 +1,199 @@
+import streamlit as st
+import pandas as pd
+import networkx as nx
+import graphviz
+import io
+import math
+
+st.set_page_config(layout="wide")
+st.title("ระบบวิเคราะห์และทำนายพารามิเตอร์ทางพันธุศาสตร์ปศุสัตว์")
+
+# --- ส่วนที่ 1: ฟังก์ชันคณิตศาสตร์พันธุศาสตร์ (Tabular Method) ---
+def calculate_pedigree_matrices(df):
+    """
+    คำนวณ Additive Relationship Matrix (A-Matrix) เพื่อหาค่า F และ R จริง
+    """
+    # เตรียมข้อมูลและแปลงเป็น String เพื่อป้องกันข้อผิดพลาด
+    df_clean = df.copy()
+    df_clean['Animal_ID'] = df_clean['Animal_ID'].astype(str)
+    df_clean['Sire_ID'] = df_clean['Sire_ID'].astype(str)
+    df_clean['Dam_ID'] = df_clean['Dam_ID'].astype(str)
+    
+    animals = df_clean['Animal_ID'].tolist()
+    sires = dict(zip(df_clean['Animal_ID'], df_clean['Sire_ID']))
+    dams = dict(zip(df_clean['Animal_ID'], df_clean['Dam_ID']))
+    
+    # ใช้ NetworkX เรียงลำดับตามรุ่นจากบรรพบุรุษลงมาหาลูก (Topological Sort)
+    G = nx.DiGraph()
+    for a in animals:
+        G.add_node(a)
+        if sires[a] != "Unknown" and sires[a] in animals:
+            G.add_edge(sires[a], a)
+        if dams[a] != "Unknown" and dams[a] in animals:
+            G.add_edge(dams[a], a)
+            
+    try:
+        ordered_animals = list(nx.topological_sort(G))
+    except nx.NetworkXUnfeasible:
+        st.error("⚠️ พบข้อผิดพลาด: โครงสร้างประวัติพันธุ์มีลักษณะเป็นวงจร (Loop) กรุณาตรวจสอบข้อมูลพ่อแม่")
+        return {}, {}, {}
+
+    # สร้าง Matrix จำลองด้วย Dictionary
+    all_nodes = ordered_animals + ["Unknown"]
+    A = {s: {d: 0.0 for d in all_nodes} for s in all_nodes}
+    
+    # กำหนดค่าเริ่มต้นให้กับตัวที่ไม่ทราบประวัติ (Base Population)
+    for node in all_nodes:
+        A[node][node] = 1.0
+        
+    # วนลูปคำนวณตามหลัก Tabular Method
+    for i in ordered_animals:
+        s = sires[i] if sires[i] in A else "Unknown"
+        d = dams[i] if dams[i] in A else "Unknown"
+        
+        # คำนวณความสัมพันธ์ระหว่าง i กับสัตว์ตัวอื่นๆ ที่คำนวณไปแล้ว
+        for j in ordered_animals:
+            if i == j:
+                # ค่าในแนวทแยงมุม: A_ii = 1 + 0.5 * A_(sire, dam)
+                A[i][i] = 1.0 + 0.5 * A[s][d]
+            else:
+                # ค่านอกแนวทแยงมุม: A_ij = 0.5 * (A_(sire, j) + A_(dam, j))
+                val = 0.5 * (A[s][j] + A[d][j])
+                A[i][j] = val
+                A[j][i] = val
+
+    # ถอดค่า Inbreeding Coefficient (F) และ Relationship Coefficient (R)
+    F_coefficients = {}
+    for i in ordered_animals:
+        F_coefficients[i] = A[i][i] - 1.0  # F_i = A_ii - 1
+        
+    R_coefficients = {i: {} for i in ordered_animals}
+    for i in ordered_animals:
+        for j in ordered_animals:
+            denom = math.sqrt(A[i][i] * A[j][j])
+            R_coefficients[i][j] = A[i][j] / denom if denom > 0 else 0.0
+
+    return F_coefficients, R_coefficients, A
+
+# --- ส่วนที่ 2: ระบบจัดการไฟล์ต้นแบบ ---
+def generate_excel_template():
+    df = pd.DataFrame({
+        "Farm": ["ฟาร์มวิจัย A", "ฟาร์มวิจัย A", "ฟาร์มวิจัย A", "ฟาร์มวิจัย A", "ฟาร์มวิจัย A"],
+        "Animal_ID": ["M01", "F01", "M02", "C01", "C02"],
+        "Sire_ID": ["Unknown", "Unknown", "Unknown", "M01", "M01"],
+        "Dam_ID": ["Unknown", "Unknown", "Unknown", "F01", "F01"],
+        "Sex": ["M", "F", "M", "M", "F"]
+    })
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Pedigree')
+    return output.getvalue()
+
+# --- ส่วนที่ 3: ส่วนแสดงผลหน้าเว็บ (UI) ---
+st.header("1. นำเข้าข้อมูลระบบฟาร์ม")
+col_dl, col_ul = st.columns(2)
+
+with col_dl:
+    st.write("ดาวน์โหลดไฟล์ Excel ต้นแบบ")
+    st.download_button(
+        label="📥 ดาวน์โหลด Template",
+        data=generate_excel_template(),
+        file_name="pedigree_template.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+with col_ul:
+    uploaded_file = st.file_uploader("อัปโหลดไฟล์ข้อมูลสายพันธุ์สัตว์ (.xlsx)", type=["xlsx"])
+
+if uploaded_file is not None:
+    df = pd.read_excel(uploaded_file)
+    df = df.fillna("Unknown")
+    
+    # ระบบเลือกฟาร์ม
+    farm_list = df["Farm"].unique().tolist()
+    selected_farm = st.selectbox("เลือกฟาร์มที่ต้องการวิเคราะห์ข้อมูล", ["แสดงทุกฟาร์ม"] + farm_list)
+    
+    filtered_df = df if selected_farm == "แสดงทุกฟาร์ม" else df[df["Farm"] == selected_farm]
+    
+    # ประมวลผลคณิตศาสตร์พันธุศาสตร์
+    F_dict, R_dict, A_matrix = calculate_pedigree_matrices(filtered_df)
+    
+    # เพิ่มคอลัมน์แสดงค่า F ของตัวเองในตารางข้อมูล
+    display_df = filtered_df.copy()
+    display_df['Inbreeding_Coefficient (F)'] = display_df['Animal_ID'].astype(str).map(
+        lambda x: f"{F_dict.get(x, 0.0) * 100:.2f} %"
+    )
+    
+    st.subheader("ตารางข้อมูลประวัติพันธุ์พร้อมค่าเลือดชิดประจำตัวสัตว์")
+    st.dataframe(display_df, use_container_width=True)
+
+    # วาดแผนผัง Pedigree Chart ด้วย Graphviz
+    st.subheader("แผนผังพันธุ์ประวัติ (Pedigree Chart)")
+    graph = graphviz.Digraph(graph_attr={'rankdir': 'TB'})
+    for index, row in filtered_df.iterrows():
+        ani = str(row['Animal_ID'])
+        sex = str(row['Sex'])
+        f_val = F_dict.get(ani, 0.0) * 100
+        
+        color = "lightblue" if sex == "M" else "lightpink" if sex == "F" else "lightgray"
+        shape = "box" if sex == "M" else "ellipse"
+        label_text = f"{ani}\n(F: {f_val:.2f}%)"
+        
+        graph.node(ani, label=label_text, style="filled", fillcolor=color, shape=shape)
+        if str(row['Sire_ID']) != "Unknown":
+            graph.edge(str(row['Sire_ID']), ani)
+        if str(row['Dam_ID']) != "Unknown":
+            graph.edge(str(row['Dam_ID']), ani)
+    st.graphviz_chart(graph)
+
+    # --- ส่วนที่ 4: การจำลองการผสมพันธุ์และการทำนายลูก ---
+    st.header("2. ระบบจำลองและทำนายผลการจับคู่ผสมพันธุ์ (Mating Simulation)")
+    
+    # แยกรายชื่อพ่อพันธุ์และแม่พันธุ์จากฐานข้อมูลเพื่อความแม่นยำในการเลือก
+    sire_options = filtered_df[filtered_df['Sex'] == 'M']['Animal_ID'].astype(str).tolist()
+    dam_options = filtered_df[filtered_df['Sex'] == 'F']['Animal_ID'].astype(str).tolist()
+    
+    col_sire, col_dam = st.columns(2)
+    with col_sire:
+        selected_sire = st.selectbox("เลือกพ่อพันธุ์ที่ต้องการทดสอบ", ["กรุณาเลือก"] + sire_options)
+    with col_dam:
+        selected_dam = st.selectbox("เลือกแม่พันธุ์ที่ต้องการทดสอบ", ["กรุณาเลือก"] + dam_options)
+        
+    if st.button("ทำการจำลองและคำนวณผลลัพธ์ของลูก"):
+        if selected_sire != "กรุณาเลือก" and selected_dam != "กรุณาเลือก":
+            
+            # 1. ดึงค่าความสัมพันธ์ทางสายเลือด (R) ระหว่าง พ่อ และ แม่
+            R_sire_dam = R_dict.get(selected_sire, {}).get(selected_dam, 0.0)
+            
+            # 2. คำนวณค่าเลือดชิดของลูกที่จะเกิดมา (F_offspring) 
+            # สูตร: F_ลูก = 0.5 * A_พ่อ_แม่
+            # ในที่นี้ A_พ่อ_แม่ สามารถหาได้จาก R_sire_dam * sqrt(A_sire_sire * A_dam_dam)
+            A_sire_sire = A_matrix.get(selected_sire, {}).get(selected_sire, 1.0)
+            A_dam_dam = A_matrix.get(selected_dam, {}).get(selected_dam, 1.0)
+            A_sire_dam = R_sire_dam * math.sqrt(A_sire_sire * A_dam_dam)
+            
+            F_offspring = 0.5 * A_sire_dam
+            
+            # ดึงค่า F ของตัวพ่อและตัวแม่เองมาแสดงเปรียบเทียบ
+            F_sire = F_dict.get(selected_sire, 0.0) * 100
+            F_dam = F_dict.get(selected_dam, 0.0) * 100
+            
+            st.markdown("### 📊 ผลการวิเคราะห์คู่ผสม")
+            
+            # แสดงค่าสถิติหลัก
+            c1, c2, c3 = st.columns(3)
+            c1.metric(label="ค่าเลือดชิดของพ่อพันธุ์เอง", value=f"{F_sire:.2f} %")
+            c2.metric(label="ค่าเลือดชิดของแม่พันธุ์เอง", value=f"{F_dam:.2f} %")
+            c3.metric(label="ค่าความสัมพันธ์ระหว่างคู่ผสม (R)", value=f"{R_sire_dam * 100:.2f} %")
+            
+            # แสดงผลลัพธ์ของลูกที่ทำนายได้
+            st.markdown("---")
+            if F_offspring > 0:
+                st.error(f"⚠️ **แจ้งเตือนความเสี่ยง:** หากผสมคู่นี้ ลูกที่เกิดมาจะมีค่าอัตราเลือดชิด **F = {F_offspring * 100:.2f} %**")
+                if F_offspring >= 0.125:
+                    st.markdown("*คำแนะนำ: คู่นี้มีความสัมพันธ์ใกล้ชิดกันสูงมาก (เทียบเท่าระดับพี่น้องร่วมพ่อหรือแม่ หรือใกล้ชิดกว่า) ควรหลีกเลี่ยงเพื่อป้องกันภาวะเลือดชิดถดถอย (Inbreeding Depression)*")
+            else:
+                st.success(f"✅ **คู่ผสมปลอดภัย:** ไม่พบความสัมพันธ์ทางสายเลือดในฐานข้อมูล ลูกที่เกิดมาจะมีค่าอัตราเลือดชิด **F = 0.00 %**")
+                
+        else:
+            st.error("กรุณาเลือกทั้งพ่อพันธุ์และแม่พันธุ์ก่อนทำรายการ")

@@ -8,8 +8,8 @@ export default function AnimalDetail() {
   const { id } = useParams();
   const animalId = Number(id);
   
-  const { data: animal, isLoading: animalLoading } = useGetAnimal(animalId, { query: { enabled: !!animalId } });
-  const { data: pedigree, isLoading: pedigreeLoading } = useGetAnimalPedigree(animalId, { query: { enabled: !!animalId } });
+  const { data: animal, isLoading: animalLoading } = useGetAnimal(animalId);
+  const { data: pedigree, isLoading: pedigreeLoading } = useGetAnimalPedigree(animalId);
 
   if (animalLoading || !animal) return <div>กำลังโหลด...</div>;
 
@@ -39,13 +39,29 @@ export default function AnimalDetail() {
             <CardTitle>ข้อมูลทั่วไป</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <div className="text-sm text-muted-foreground">เพศ</div>
-              <div className="font-medium">{animal.sex === 'male' ? 'ตัวผู้' : 'ตัวเมีย'}</div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-sm text-muted-foreground">เพศ</div>
+                <div className="font-medium">{animal.sex === 'male' ? 'ตัวผู้' : 'ตัวเมีย'}</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">ฟาร์ม</div>
+                <div className="font-medium">{animal.farm || '-'}</div>
+              </div>
             </div>
-            <div>
-              <div className="text-sm text-muted-foreground">วันเกิด</div>
-              <div className="font-medium">{animal.birthDate ? new Date(animal.birthDate).toLocaleDateString('th-TH') : '-'}</div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-sm text-muted-foreground">วันเกิด</div>
+                <div className="font-medium">{animal.birthDate ? new Date(animal.birthDate).toLocaleDateString('th-TH') : '-'}</div>
+              </div>
+              <div>
+                <div className="text-sm text-muted-foreground">ค่าเลือดชิดตัวเอง (F)</div>
+                <div className="font-medium text-primary">
+                  {animal.fCoefficient !== null && animal.fCoefficient !== undefined 
+                    ? `${(animal.fCoefficient * 100).toFixed(2)}%` 
+                    : '-'}
+                </div>
+              </div>
             </div>
             <div>
               <div className="text-sm text-muted-foreground">พ่อพันธุ์</div>

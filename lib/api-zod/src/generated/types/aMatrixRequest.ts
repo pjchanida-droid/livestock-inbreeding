@@ -6,10 +6,7 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export type AnimalUpdateSex = typeof AnimalUpdateSex[keyof typeof AnimalUpdateSex];
-
-
-export const AnimalUpdateSex = {
-  male: 'male',
-  female: 'female',
-} as const;
+export interface AMatrixRequest {
+  /** Filter by farm; if omitted, uses all animals */
+  farm?: string;
+}

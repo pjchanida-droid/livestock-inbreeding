@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * ระบบทำนายอัตราเลือดชิดสำหรับปศุสัตว์
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 export interface HealthStatus {
   status: string;
@@ -24,6 +24,8 @@ export interface Animal {
   species: string;
   sex: AnimalSex;
   /** @nullable */
+  farm?: string | null;
+  /** @nullable */
   birthDate?: string | null;
   /** @nullable */
   notes?: string | null;
@@ -35,6 +37,11 @@ export interface Animal {
   sireName?: string | null;
   /** @nullable */
   damName?: string | null;
+  /**
+     * Animal's own inbreeding coefficient
+     * @nullable
+     */
+  fCoefficient?: number | null;
   createdAt: string;
 }
 
@@ -54,6 +61,7 @@ export interface AnimalInput {
   /** @minLength 1 */
   species: string;
   sex: AnimalInputSex;
+  farm?: string;
   birthDate?: string;
   notes?: string;
   /** @nullable */
@@ -76,6 +84,7 @@ export interface AnimalUpdate {
   code?: string;
   species?: string;
   sex?: AnimalUpdateSex;
+  farm?: string;
   birthDate?: string;
   notes?: string;
   /** @nullable */
@@ -89,6 +98,8 @@ export interface PedigreeNode {
   name: string;
   code: string;
   sex: string;
+  /** @nullable */
+  fCoefficient?: number | null;
   sire?: PedigreeNode;
   dam?: PedigreeNode;
 }
@@ -121,10 +132,18 @@ export interface InbreedingResult {
   damId: number;
   sireName: string;
   damName: string;
-  /** Wright's inbreeding coefficient F (0-1) */
+  /** Predicted inbreeding coefficient of offspring F = 0.5 * A[sire][dam] */
   fCoefficient: number;
-  /** F coefficient as percentage */
   fPercent?: number;
+  /** Relationship coefficient R between sire and dam */
+  rCoefficient: number;
+  rPercent?: number;
+  /** Inbreeding coefficient of the sire itself */
+  fSire: number;
+  fSirePercent?: number;
+  /** Inbreeding coefficient of the dam itself */
+  fDam: number;
+  fDamPercent?: number;
   riskLevel: InbreedingResultRiskLevel;
   riskLabel?: string;
   commonAncestors: CommonAncestor[];
@@ -139,6 +158,14 @@ export interface InbreedingHistory {
   damName: string;
   fCoefficient: number;
   fPercent?: number;
+  /** @nullable */
+  rCoefficient?: number | null;
+  /** @nullable */
+  rPercent?: number | null;
+  /** @nullable */
+  fSire?: number | null;
+  /** @nullable */
+  fDam?: number | null;
   riskLevel: string;
   riskLabel?: string;
   calculatedAt: string;
@@ -159,7 +186,37 @@ export interface InbreedingStats {
   riskBreakdown: RiskBreakdownItem[];
 }
 
+export interface AMatrixRequest {
+  /** Filter by farm; if omitted, uses all animals */
+  farm?: string;
+}
+
+export interface AMatrixAnimal {
+  id: number;
+  name: string;
+  code: string;
+  sex: string;
+  /** @nullable */
+  farm?: string | null;
+  fCoefficient: number;
+  fPercent: number;
+}
+
+export interface AMatrixResult {
+  animals: AMatrixAnimal[];
+}
+
+export interface ImportResult {
+  inserted: number;
+  skipped: number;
+  errors: string[];
+}
+
 export interface ErrorResponse {
   error: string;
 }
+
+export type ListAnimalsParams = {
+farm?: string;
+};
 

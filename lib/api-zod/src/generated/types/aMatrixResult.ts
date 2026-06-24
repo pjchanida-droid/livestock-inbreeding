@@ -5,11 +5,8 @@
  * ระบบทำนายอัตราเลือดชิดสำหรับปศุสัตว์
  * OpenAPI spec version: 0.2.0
  */
+import type { AMatrixAnimal } from './aMatrixAnimal';
 
-export type AnimalUpdateSex = typeof AnimalUpdateSex[keyof typeof AnimalUpdateSex];
-
-
-export const AnimalUpdateSex = {
-  male: 'male',
-  female: 'female',
-} as const;
+export interface AMatrixResult {
+  animals: AMatrixAnimal[];
+}

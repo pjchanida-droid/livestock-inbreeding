@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * ระบบทำนายอัตราเลือดชิดสำหรับปศุสัตว์
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import type { CommonAncestor } from './commonAncestor';
 import type { InbreedingResultRiskLevel } from './inbreedingResultRiskLevel';
@@ -13,10 +13,18 @@ export interface InbreedingResult {
   damId: number;
   sireName: string;
   damName: string;
-  /** Wright's inbreeding coefficient F (0-1) */
+  /** Predicted inbreeding coefficient of offspring F = 0.5 * A[sire][dam] */
   fCoefficient: number;
-  /** F coefficient as percentage */
   fPercent?: number;
+  /** Relationship coefficient R between sire and dam */
+  rCoefficient: number;
+  rPercent?: number;
+  /** Inbreeding coefficient of the sire itself */
+  fSire: number;
+  fSirePercent?: number;
+  /** Inbreeding coefficient of the dam itself */
+  fDam: number;
+  fDamPercent?: number;
   riskLevel: InbreedingResultRiskLevel;
   riskLabel?: string;
   commonAncestors: CommonAncestor[];

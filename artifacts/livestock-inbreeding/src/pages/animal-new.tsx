@@ -19,6 +19,7 @@ const animalSchema = z.object({
   code: z.string().min(1, "กรุณาระบุรหัส"),
   species: z.string().min(1, "กรุณาระบุสายพันธุ์"),
   sex: z.enum(["male", "female"], { required_error: "กรุณาระบุเพศ" }),
+  farm: z.string().optional(),
   birthDate: z.string().optional(),
   notes: z.string().optional(),
   sireId: z.string().transform(val => val ? Number(val) : null).optional(),
@@ -35,7 +36,7 @@ export default function AnimalNew() {
   const form = useForm<z.infer<typeof animalSchema>>({
     resolver: zodResolver(animalSchema),
     defaultValues: {
-      name: "", code: "", species: "", notes: "", birthDate: ""
+      name: "", code: "", species: "", farm: "", notes: "", birthDate: ""
     }
   });
 
@@ -93,6 +94,13 @@ export default function AnimalNew() {
                   <FormItem>
                     <FormLabel>สายพันธุ์</FormLabel>
                     <FormControl><Input {...field} placeholder="เช่น โคเนื้อบราห์มัน" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="farm" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ฟาร์ม</FormLabel>
+                    <FormControl><Input {...field} placeholder="ระบุชื่อฟาร์ม (ถ้ามี)" value={field.value || ""} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />

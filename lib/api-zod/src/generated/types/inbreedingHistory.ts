@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * ระบบทำนายอัตราเลือดชิดสำหรับปศุสัตว์
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 
 export interface InbreedingHistory {
@@ -14,6 +14,14 @@ export interface InbreedingHistory {
   damName: string;
   fCoefficient: number;
   fPercent?: number;
+  /** @nullable */
+  rCoefficient?: number | null;
+  /** @nullable */
+  rPercent?: number | null;
+  /** @nullable */
+  fSire?: number | null;
+  /** @nullable */
+  fDam?: number | null;
   riskLevel: string;
   riskLabel?: string;
   calculatedAt: string;

@@ -6,10 +6,13 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export type AnimalUpdateSex = typeof AnimalUpdateSex[keyof typeof AnimalUpdateSex];
-
-
-export const AnimalUpdateSex = {
-  male: 'male',
-  female: 'female',
-} as const;
+export interface AMatrixAnimal {
+  id: number;
+  name: string;
+  code: string;
+  sex: string;
+  /** @nullable */
+  farm?: string | null;
+  fCoefficient: number;
+  fPercent: number;
+}

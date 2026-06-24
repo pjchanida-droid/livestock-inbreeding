@@ -6,10 +6,8 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export type AnimalUpdateSex = typeof AnimalUpdateSex[keyof typeof AnimalUpdateSex];
-
-
-export const AnimalUpdateSex = {
-  male: 'male',
-  female: 'female',
-} as const;
+export interface ImportResult {
+  inserted: number;
+  skipped: number;
+  errors: string[];
+}

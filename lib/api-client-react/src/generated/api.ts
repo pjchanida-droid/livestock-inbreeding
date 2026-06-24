@@ -3,7 +3,7 @@
  * Do not edit manually.
  * Api
  * ระบบทำนายอัตราเลือดชิดสำหรับปศุสัตว์
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 import {
   useMutation,
@@ -20,6 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AMatrixRequest,
+  AMatrixResult,
   Animal,
   AnimalInput,
   AnimalUpdate,
@@ -29,6 +31,7 @@ import type {
   InbreedingRequest,
   InbreedingResult,
   InbreedingStats,
+  ListAnimalsParams,
   PedigreeNode
 } from './api.schemas';
 
@@ -53,7 +56,6 @@ export const getHealthCheckUrl = () => {
 }
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const healthCheck = async ( options?: RequestInit): Promise<HealthStatus> => {
@@ -122,20 +124,27 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
-export const getListAnimalsUrl = () => {
+export const getListAnimalsUrl = (params?: ListAnimalsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/animals`
+  return stringifiedParams.length > 0 ? `/api/animals?${stringifiedParams}` : `/api/animals`
 }
 
 /**
  * @summary List all animals
  */
-export const listAnimals = async ( options?: RequestInit): Promise<Animal[]> => {
+export const listAnimals = async (params?: ListAnimalsParams, options?: RequestInit): Promise<Animal[]> => {
 
-  return customFetch<Animal[]>(getListAnimalsUrl(),
+  return customFetch<Animal[]>(getListAnimalsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -148,23 +157,23 @@ export const listAnimals = async ( options?: RequestInit): Promise<Animal[]> => 
 
 
 
-export const getListAnimalsQueryKey = () => {
+export const getListAnimalsQueryKey = (params?: ListAnimalsParams,) => {
     return [
-    `/api/animals`
+    `/api/animals`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListAnimalsQueryOptions = <TData = Awaited<ReturnType<typeof listAnimals>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAnimals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListAnimalsQueryOptions = <TData = Awaited<ReturnType<typeof listAnimals>>, TError = ErrorType<unknown>>(params?: ListAnimalsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAnimals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListAnimalsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListAnimalsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAnimals>>> = ({ signal }) => listAnimals({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAnimals>>> = ({ signal }) => listAnimals(params, { signal, ...requestOptions });
 
 
 
@@ -182,11 +191,11 @@ export type ListAnimalsQueryError = ErrorType<unknown>
  */
 
 export function useListAnimals<TData = Awaited<ReturnType<typeof listAnimals>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAnimals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: ListAnimalsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAnimals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListAnimalsQueryOptions(options)
+  const queryOptions = getListAnimalsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -269,6 +278,83 @@ export const useCreateAnimal = <TError = ErrorType<ErrorResponse>,
       > => {
       return useMutation(getCreateAnimalMutationOptions(options));
     }
+
+export const getListFarmsUrl = () => {
+
+
+
+
+  return `/api/animals/farms`
+}
+
+/**
+ * @summary List all unique farm names
+ */
+export const listFarms = async ( options?: RequestInit): Promise<string[]> => {
+
+  return customFetch<string[]>(getListFarmsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListFarmsQueryKey = () => {
+    return [
+    `/api/animals/farms`
+    ] as const;
+    }
+
+
+export const getListFarmsQueryOptions = <TData = Awaited<ReturnType<typeof listFarms>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFarms>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListFarmsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listFarms>>> = ({ signal }) => listFarms({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listFarms>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListFarmsQueryResult = NonNullable<Awaited<ReturnType<typeof listFarms>>>
+export type ListFarmsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all unique farm names
+ */
+
+export function useListFarms<TData = Awaited<ReturnType<typeof listFarms>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listFarms>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListFarmsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetAnimalUrl = (id: number,) => {
 
@@ -575,7 +661,7 @@ export const getCalculateInbreedingUrl = () => {
 }
 
 /**
- * @summary Calculate inbreeding coefficient (F) for a potential mating pair
+ * @summary Calculate inbreeding coefficient (F) for a potential mating pair using A-matrix
  */
 export const calculateInbreeding = async (inbreedingRequest: InbreedingRequest, options?: RequestInit): Promise<InbreedingResult> => {
 
@@ -624,7 +710,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type CalculateInbreedingMutationError = ErrorType<ErrorResponse>
 
     /**
- * @summary Calculate inbreeding coefficient (F) for a potential mating pair
+ * @summary Calculate inbreeding coefficient (F) for a potential mating pair using A-matrix
  */
 export const useCalculateInbreeding = <TError = ErrorType<ErrorResponse>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof calculateInbreeding>>, TError,{data: BodyType<InbreedingRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -723,7 +809,7 @@ export const getGetInbreedingStatsUrl = () => {
 }
 
 /**
- * @summary Get summary statistics for inbreeding across all animals
+ * @summary Get summary statistics
  */
 export const getInbreedingStats = async ( options?: RequestInit): Promise<InbreedingStats> => {
 
@@ -770,7 +856,7 @@ export type GetInbreedingStatsQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Get summary statistics for inbreeding across all animals
+ * @summary Get summary statistics
  */
 
 export function useGetInbreedingStats<TData = Awaited<ReturnType<typeof getInbreedingStats>>, TError = ErrorType<unknown>>(
@@ -790,4 +876,75 @@ export function useGetInbreedingStats<TData = Awaited<ReturnType<typeof getInbre
 
 
 
+
+export const getComputeAMatrixUrl = () => {
+
+
+
+
+  return `/api/inbreeding/a-matrix`
+}
+
+/**
+ * @summary Compute full Additive Relationship Matrix for a set of animals
+ */
+export const computeAMatrix = async (aMatrixRequest: AMatrixRequest, options?: RequestInit): Promise<AMatrixResult> => {
+
+  return customFetch<AMatrixResult>(getComputeAMatrixUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      aMatrixRequest,)
+  }
+);}
+
+
+
+
+export const getComputeAMatrixMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof computeAMatrix>>, TError,{data: BodyType<AMatrixRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof computeAMatrix>>, TError,{data: BodyType<AMatrixRequest>}, TContext> => {
+
+const mutationKey = ['computeAMatrix'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof computeAMatrix>>, {data: BodyType<AMatrixRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  computeAMatrix(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ComputeAMatrixMutationResult = NonNullable<Awaited<ReturnType<typeof computeAMatrix>>>
+    export type ComputeAMatrixMutationBody = BodyType<AMatrixRequest>
+    export type ComputeAMatrixMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Compute full Additive Relationship Matrix for a set of animals
+ */
+export const useComputeAMatrix = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof computeAMatrix>>, TError,{data: BodyType<AMatrixRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof computeAMatrix>>,
+        TError,
+        {data: BodyType<AMatrixRequest>},
+        TContext
+      > => {
+      return useMutation(getComputeAMatrixMutationOptions(options));
+    }
 
