@@ -3,13 +3,17 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: ระบบทำนายอัตราเลือดชิดสำหรับปศุสัตว์
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: animals
+    description: Animal records
+  - name: inbreeding
+    description: Inbreeding coefficient calculations
 paths:
   /healthz:
     get:
@@ -24,6 +28,196 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /animals:
+    get:
+      operationId: listAnimals
+      tags: [animals]
+      summary: List all animals
+      responses:
+        "200":
+          description: List of animals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Animal"
+    post:
+      operationId: createAnimal
+      tags: [animals]
+      summary: Create a new animal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnimalInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Animal"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /animals/{id}:
+    get:
+      operationId: getAnimal
+      tags: [animals]
+      summary: Get an animal by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Animal details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Animal"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateAnimal
+      tags: [animals]
+      summary: Update an animal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnimalUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Animal"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteAnimal
+      tags: [animals]
+      summary: Delete an animal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /animals/{id}/pedigree:
+    get:
+      operationId: getAnimalPedigree
+      tags: [animals]
+      summary: Get pedigree tree for an animal (up to 4 generations)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Pedigree tree
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PedigreeNode"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /inbreeding/calculate:
+    post:
+      operationId: calculateInbreeding
+      tags: [inbreeding]
+      summary: Calculate inbreeding coefficient (F) for a potential mating pair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InbreedingRequest"
+      responses:
+        "200":
+          description: Inbreeding calculation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InbreedingResult"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /inbreeding/history:
+    get:
+      operationId: listInbreedingHistory
+      tags: [inbreeding]
+      summary: List recent inbreeding calculation history
+      responses:
+        "200":
+          description: List of past calculations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InbreedingHistory"
+
+  /inbreeding/stats:
+    get:
+      operationId: getInbreedingStats
+      tags: [inbreeding]
+      summary: Get summary statistics for inbreeding across all animals
+      responses:
+        "200":
+          description: Inbreeding statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InbreedingStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +228,212 @@ components:
       required:
         - status
 
+    Animal:
+      type: object
+      required: [id, name, code, species, sex, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+        species:
+          type: string
+        sex:
+          type: string
+          enum: [male, female]
+        birthDate:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        sireId:
+          type: ["integer", "null"]
+        damId:
+          type: ["integer", "null"]
+        sireName:
+          type: ["string", "null"]
+        damName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    AnimalInput:
+      type: object
+      required: [name, code, species, sex]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        code:
+          type: string
+          minLength: 1
+        species:
+          type: string
+          minLength: 1
+        sex:
+          type: string
+          enum: [male, female]
+        birthDate:
+          type: string
+        notes:
+          type: string
+        sireId:
+          type: ["integer", "null"]
+        damId:
+          type: ["integer", "null"]
+
+    AnimalUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        code:
+          type: string
+        species:
+          type: string
+        sex:
+          type: string
+          enum: [male, female]
+        birthDate:
+          type: string
+        notes:
+          type: string
+        sireId:
+          type: ["integer", "null"]
+        damId:
+          type: ["integer", "null"]
+
+    PedigreeNode:
+      type: object
+      required: [id, name, code, sex]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+        sex:
+          type: string
+        sire:
+          $ref: "#/components/schemas/PedigreeNode"
+        dam:
+          $ref: "#/components/schemas/PedigreeNode"
+
+    InbreedingRequest:
+      type: object
+      required: [sireId, damId]
+      properties:
+        sireId:
+          type: integer
+        damId:
+          type: integer
+
+    InbreedingResult:
+      type: object
+      required: [sireId, damId, sireName, damName, fCoefficient, riskLevel, commonAncestors, pathways]
+      properties:
+        sireId:
+          type: integer
+        damId:
+          type: integer
+        sireName:
+          type: string
+        damName:
+          type: string
+        fCoefficient:
+          type: number
+          description: Wright's inbreeding coefficient F (0-1)
+        fPercent:
+          type: number
+          description: F coefficient as percentage
+        riskLevel:
+          type: string
+          enum: [safe, low, moderate, high, very_high]
+        riskLabel:
+          type: string
+        commonAncestors:
+          type: array
+          items:
+            $ref: "#/components/schemas/CommonAncestor"
+        pathways:
+          type: array
+          items:
+            type: string
+
+    CommonAncestor:
+      type: object
+      required: [id, name, code, contribution]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+        contribution:
+          type: number
+
+    InbreedingHistory:
+      type: object
+      required: [id, sireId, damId, sireName, damName, fCoefficient, riskLevel, calculatedAt]
+      properties:
+        id:
+          type: integer
+        sireId:
+          type: integer
+        damId:
+          type: integer
+        sireName:
+          type: string
+        damName:
+          type: string
+        fCoefficient:
+          type: number
+        fPercent:
+          type: number
+        riskLevel:
+          type: string
+        riskLabel:
+          type: string
+        calculatedAt:
+          type: string
+
+    InbreedingStats:
+      type: object
+      required: [totalAnimals, totalCalculations, averageF, riskBreakdown]
+      properties:
+        totalAnimals:
+          type: integer
+        totalCalculations:
+          type: integer
+        averageF:
+          type: number
+        safePairings:
+          type: integer
+        riskyPairings:
+          type: integer
+        riskBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/RiskBreakdownItem"
+
+    RiskBreakdownItem:
+      type: object
+      required: [level, label, count]
+      properties:
+        level:
+          type: string
+        label:
+          type: string
+        count:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
