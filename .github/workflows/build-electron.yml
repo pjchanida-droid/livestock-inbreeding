@@ -24,27 +24,16 @@ jobs:
         with:
           version: 10
 
-      - name: Remove Linux-only overrides from workspace config
-        shell: pwsh
+      - name: Strip Linux-only overrides from pnpm-workspace.yaml
+        shell: node {0}
         run: |
-          $content = Get-Content pnpm-workspace.yaml -Raw
-          # Remove the entire overrides block (Linux/macOS/Android-only exclusions)
-          # We keep the file but clear the overrides so Windows packages install correctly
-          $content = $content -replace '(?ms)^overrides:.*', ''
-          Set-Content pnpm-workspace.yaml $content
-
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - name: Cache pnpm store
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
+          const fs = require('fs');
+          let txt = fs.readFileSync('pnpm-workspace.yaml', 'utf8');
+          // Remove everything from the "overrides:" key to end of file
+          const idx = txt.indexOf('\noverrides:');
+          if (idx !== -1) txt = txt.slice(0, idx);
+          fs.writeFileSync('pnpm-workspace.yaml', txt);
+          console.log('pnpm-workspace.yaml patched — overrides removed');
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
@@ -65,7 +54,6 @@ jobs:
           $iconDir = "artifacts/electron-app/assets"
           if (-not (Test-Path $iconDir)) { New-Item -ItemType Directory -Path $iconDir }
           if (-not (Test-Path "$iconDir/icon.ico")) {
-            # Download a generic icon or create a minimal valid .ico
             Invoke-WebRequest -Uri "https://raw.githubusercontent.com/electron/electron/main/shell/browser/resources/win/electron.ico" -OutFile "$iconDir/icon.ico"
           }
 
