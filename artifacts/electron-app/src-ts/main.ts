@@ -65,6 +65,7 @@ function startApiServer(): Promise<void> {
       PORT: String(SERVER_PORT),
       DATABASE_PATH: dbPath,
       NODE_ENV: "production",
+      NODE_OPTIONS: "--experimental-sqlite",
     };
 
     if (fs.existsSync(frontendDir)) {
