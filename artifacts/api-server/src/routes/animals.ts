@@ -84,10 +84,10 @@ router.get("/animals/farms", async (req, res) => {
 router.get("/animals/template", (_req, res) => {
   const wb = XLSX.utils.book_new();
   const data = [
-    ["Farm", "Animal_ID", "Sire_ID", "Dam_ID", "Sex"],
-    ["ฟาร์มวิจัย A", "M01", "Unknown", "Unknown", "M"],
-    ["ฟาร์มวิจัย A", "F01", "Unknown", "Unknown", "F"],
-    ["ฟาร์มวิจัย A", "C01", "M01", "F01", "M"],
+    ["Farm", "Animal_ID", "Sire_ID", "Dam_ID", "Sex", "Species", "Name"],
+    ["ฟาร์มวิจัย A", "M01", "Unknown", "Unknown", "M", "โคนม", "พ่อพันธุ์"],
+    ["ฟาร์มวิจัย A", "F01", "Unknown", "Unknown", "F", "โคนม", "แม่พันธุ์"],
+    ["ฟาร์มวิจัย A", "C01", "M01", "F01", "M", "โคนม", "ลูกผสม"],
   ];
   const ws = XLSX.utils.aoa_to_sheet(data);
   XLSX.utils.book_append_sheet(wb, ws, "Pedigree");
@@ -157,22 +157,11 @@ router.post("/animals/import", upload.single("file"), async (req, res) => {
         const species = String(row["Species"] || "").trim() || "ไม่ระบุ";
         const name = String(row["Name"] || code).trim();
         const farm = String(row["Farm"] || "").trim() || null;
-        const notes = String(row["Notes"] || "").trim() || null;
-
-        // BirthDate: cellDates:true gives JS Date objects; fallback handles plain strings
-        const rawBd = row["BirthDate"];
-        let birthDate: string | null = null;
-        if (rawBd instanceof Date && !isNaN(rawBd.getTime())) {
-          birthDate = rawBd.toISOString().slice(0, 10); // "YYYY-MM-DD"
-        } else if (rawBd && String(rawBd).trim()) {
-          const parsed = new Date(String(rawBd).trim());
-          if (!isNaN(parsed.getTime())) birthDate = parsed.toISOString().slice(0, 10);
-        }
 
         try {
           const [created] = await db
             .insert(animalsTable)
-            .values({ name, code, species, sex, farm, birthDate, notes, sireId, damId })
+            .values({ name, code, species, sex, farm, sireId, damId })
             .returning({ id: animalsTable.id });
           codeToId.set(code, created.id);
           inserted++;
