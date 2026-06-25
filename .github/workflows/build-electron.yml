@@ -27,6 +27,10 @@ jobs:
 
       - name: Build frontend
         run: pnpm --filter @workspace/livestock-inbreeding run build
+        env:
+          PORT: "3000"
+          BASE_PATH: "/"
+          NODE_ENV: "production"
 
       - name: Build API server
         run: pnpm --filter @workspace/api-server run build
