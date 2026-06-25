@@ -52,7 +52,7 @@ function waitForServer(port: number, maxAttempts = 60): Promise<void> {
 function startApiServer(): Promise<void> {
   return new Promise((resolve, reject) => {
     const serverScript = getResourcePath("server", "index.mjs");
-    const frontendDir = getResourcePath("frontend");
+    const frontendDir = getResourcePath("frontend", "public");
     const dbPath = getDbPath();
 
     if (!fs.existsSync(serverScript)) {
