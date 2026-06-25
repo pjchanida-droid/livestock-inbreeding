@@ -11,18 +11,20 @@ export interface PedigreeNode {
   dam?: PedigreeNode;
 }
 
-const MAX_GEN = 3;
-const ROW_H = 86;
-const NODE_W = 174;
-const NODE_H = 66;
-const COL_GAP = 56;
-const COL_W = NODE_W + COL_GAP;
+// ─── Layout constants ───────────────────────────────────────────────
+const MAX_GEN = 3;          // 4 generations: 0 (subject) → 3 (great-grand)
+const ROW_H   = 86;         // pixel height per row slot
+const NODE_W  = 174;        // node box width
+const NODE_H  = 66;         // node box height
+const COL_GAP = 56;         // horizontal gap between columns (for bracket connectors)
+const COL_W   = NODE_W + COL_GAP;
 
-const TOTAL_ROWS = 2 ** MAX_GEN; // 8
-const SVG_H = TOTAL_ROWS * ROW_H;
-const SVG_W = (MAX_GEN + 1) * COL_W + 32;
+const TOTAL_ROWS = 2 ** MAX_GEN;   // 8
+const SVG_H = TOTAL_ROWS * ROW_H;  // 688
+const SVG_W = (MAX_GEN + 1) * COL_W + 16;
 
-type SlotKind = "normal" | "unknown" | "duplicate";
+// ─── Data types ─────────────────────────────────────────────────────
+type SlotKind = "normal" | "unknown" | "duplicate-hidden";
 
 interface Slot {
   key: string;
@@ -32,25 +34,32 @@ interface Slot {
   yCenter: number;
 }
 
+// Normal bracket: parent at col → children at col+1
 interface Bracket {
-  col: number;       // parent column; children at col+1
+  col: number;
   parentY: number;
-  topChildY: number; // sire y
-  botChildY: number; // dam y
+  topY: number;   // sire/top child y
+  botY: number;   // dam/bot child y
 }
 
-interface DupLink {
-  fromY: number;
-  fromCol: number;
-  toY: number;
-  toCol: number;
+// Convergent link: canonical ancestor box already drawn; draw a solid
+// curved line FROM the canonical position TO the duplicate slot position
+// so both connections visually come FROM the same box.
+interface ConvLink {
+  canonCol: number;
+  canonY: number;
+  dupCol: number;
+  dupY: number;
+  isSharedAncestor: boolean; // always true; kept for future filtering
 }
 
+// ─── Layout builder ─────────────────────────────────────────────────
 function buildLayout(root: PedigreeNode) {
   const slots: Slot[] = [];
   const brackets: Bracket[] = [];
-  const dupLinks: DupLink[] = [];
-  const canonY = new Map<number, { y: number; col: number }>();
+  const convLinks: ConvLink[] = [];
+  // Map: animal id → { y, col } at first encounter
+  const canonMap = new Map<number, { y: number; col: number }>();
   let k = 0;
 
   function traverse(
@@ -61,113 +70,103 @@ function buildLayout(root: PedigreeNode) {
   ) {
     const yCenter = ((rowStart + rowEnd) / 2) * ROW_H;
 
+    // ── Unknown ancestor ──
     if (!node) {
       slots.push({ key: `unk-${k++}`, kind: "unknown", node: null, col, yCenter });
       return;
     }
 
-    // Detect duplicate (same real animal, id > 0)
-    if (node.id > 0 && canonY.has(node.id)) {
-      const canon = canonY.get(node.id)!;
-      slots.push({ key: `dup-${node.id}-${k++}`, kind: "duplicate", node, col, yCenter });
-      dupLinks.push({ fromY: yCenter, fromCol: col, toY: canon.y, toCol: canon.col });
-      return; // Do not recurse — subtree already shown at canonical position
+    // ── Duplicate ancestor ──
+    if (node.id > 0 && canonMap.has(node.id)) {
+      const canon = canonMap.get(node.id)!;
+      // Mark this slot as hidden (no box rendered here)
+      slots.push({ key: `dup-${node.id}-${k++}`, kind: "duplicate-hidden", node, col, yCenter });
+      // Record a convergent line: FROM canonical TO this slot
+      convLinks.push({
+        canonCol: canon.col,
+        canonY: canon.y,
+        dupCol: col,
+        dupY: yCenter,
+        isSharedAncestor: true,
+      });
+      return; // Don't recurse — subtree already shown at canonical
     }
 
-    if (node.id > 0) canonY.set(node.id, { y: yCenter, col });
+    // ── Normal (first occurrence) ──
+    if (node.id > 0) canonMap.set(node.id, { y: yCenter, col });
     slots.push({ key: `n-${node.id}-${k++}`, kind: "normal", node, col, yCenter });
 
     if (col < MAX_GEN) {
       const rowMid = (rowStart + rowEnd) / 2;
       const topY = ((rowStart + rowMid) / 2) * ROW_H;
       const botY = ((rowMid + rowEnd) / 2) * ROW_H;
-      brackets.push({ col, parentY: yCenter, topChildY: topY, botChildY: botY });
+      brackets.push({ col, parentY: yCenter, topY, botY });
       traverse(node.sire, col + 1, rowStart, rowMid);
       traverse(node.dam, col + 1, rowMid, rowEnd);
     }
   }
 
   traverse(root, 0, 0, TOTAL_ROWS);
-  return { slots, brackets, dupLinks };
+  return { slots, brackets, convLinks };
 }
 
-function nodeX(col: number) {
-  return col * COL_W;
+// ─── SVG path for a convergent line ─────────────────────────────────
+// Creates a smooth curve from canonical box's LEFT edge to the duplicate
+// slot position, staying within the bracket gap area so it doesn't
+// overlap other boxes.
+function convergentPath(link: ConvLink): string {
+  const fromX = link.canonCol * COL_W;  // canonical left edge
+  const fromY = link.canonY;
+  const toX   = link.dupCol * COL_W;    // duplicate slot left edge
+  const toY   = link.dupY;
+
+  if (link.canonCol === link.dupCol) {
+    // Same column: draw a ")"  shaped curve going slightly LEFT through
+    // the bracket gap, so it doesn't overlap intermediate boxes.
+    const ctrl = fromX - 20;
+    return `M ${fromX} ${fromY} C ${ctrl} ${fromY} ${ctrl} ${toY} ${toX} ${toY}`;
+  } else {
+    // Different columns: arc through the space between them.
+    const midX = (fromX + toX) / 2;
+    return `M ${fromX} ${fromY} C ${midX} ${fromY} ${midX} ${toY} ${toX} ${toY}`;
+  }
 }
 
-// Build SVG path that routes a duplicate link around the right edge of the chart
-function dupPath(link: DupLink): string {
-  const fx = nodeX(link.fromCol) + NODE_W / 2;
-  const tx = nodeX(link.toCol) + NODE_W + 6;
-  const rightEdge = SVG_W - 6;
-  const fy = link.fromY;
-  const ty = link.toY;
-
-  if (Math.abs(fy - ty) < 1) return "";
-
-  // Route: from duplicate center → right edge → canonical node right edge
-  return [
-    `M ${fx} ${fy}`,
-    `H ${rightEdge}`,
-    `V ${ty}`,
-    `H ${tx}`,
-  ].join(" ");
-}
-
-function NodeBox({ slot }: { slot: Slot }) {
-  const x = nodeX(slot.col);
+// ─── NodeBox component ───────────────────────────────────────────────
+function NodeBox({ slot, isShared }: { slot: Slot; isShared: boolean }) {
+  const x = slot.col * COL_W;
   const y = slot.yCenter - NODE_H / 2;
+
+  if (slot.kind === "duplicate-hidden") return null; // rendered as convergent line
 
   if (slot.kind === "unknown") {
     return (
       <foreignObject x={x} y={y} width={NODE_W} height={NODE_H}>
-        <div
-          className="w-full h-full rounded-md border-2 border-dashed border-muted-foreground/30 bg-muted/10 flex items-center justify-center"
-          style={{ fontSize: 12, color: "var(--muted-foreground)" }}
-        >
+        <div className="w-full h-full rounded-md border-2 border-dashed border-muted-foreground/25 bg-muted/10 flex items-center justify-center text-xs text-muted-foreground/60">
           ไม่ทราบ
         </div>
       </foreignObject>
     );
   }
 
-  if (slot.kind === "duplicate") {
-    // Small diamond marker at this position — actual box is at canonical
-    const cx = x + NODE_W / 2;
-    const cy = slot.yCenter;
-    return (
-      <g>
-        {/* Diamond */}
-        <polygon
-          points={`${cx},${cy - 8} ${cx + 8},${cy} ${cx},${cy + 8} ${cx - 8},${cy}`}
-          fill="hsl(var(--amber-500, 45 100% 51%))"
-          stroke="hsl(var(--border))"
-          strokeWidth={1}
-          opacity={0.8}
-          className="fill-amber-400"
-        />
-        <foreignObject x={x - 20} y={cy + 12} width={NODE_W + 40} height={28}>
-          <div style={{ fontSize: 10, textAlign: "center", color: "var(--muted-foreground)" }}>
-            ← {slot.node?.name}
-          </div>
-        </foreignObject>
-      </g>
-    );
-  }
-
-  // Normal node
   const node = slot.node!;
-  const isMale = node.sex === "male";
-  const bgClass = isMale
-    ? "bg-blue-50/80 border-blue-200"
-    : node.sex === "female"
-    ? "bg-pink-50/80 border-pink-200"
+  const isMale   = node.sex === "male";
+  const isFemale = node.sex === "female";
+  const boxCls = isMale
+    ? "bg-blue-50/90 border-blue-300"
+    : isFemale
+    ? "bg-pink-50/90 border-pink-300"
     : "bg-muted/30 border-border";
+
+  // Shared ancestors get a subtle ring to indicate they appear more than once
+  const sharedRing = isShared
+    ? "ring-2 ring-amber-400 ring-offset-1"
+    : "";
 
   return (
     <foreignObject x={x} y={y} width={NODE_W} height={NODE_H}>
       <div
-        className={`w-full h-full rounded-md border shadow-sm flex flex-col justify-center px-3 ${bgClass}`}
+        className={`w-full h-full rounded-md border shadow-sm flex flex-col justify-center px-3 ${boxCls} ${sharedRing}`}
       >
         <div className="font-bold text-sm leading-tight truncate">{node.name}</div>
         <div className="flex items-center justify-between mt-0.5 gap-1">
@@ -175,7 +174,7 @@ function NodeBox({ slot }: { slot: Slot }) {
           {(node.fCoefficient ?? 0) > 0 && (
             <Badge
               variant="outline"
-              className="text-[10px] h-4 px-1.5 py-0 bg-background/70 shrink-0"
+              className="text-[10px] h-4 px-1 py-0 bg-background/70 shrink-0"
             >
               F:{((node.fCoefficient ?? 0) * 100).toFixed(1)}%
             </Badge>
@@ -186,8 +185,24 @@ function NodeBox({ slot }: { slot: Slot }) {
   );
 }
 
+// ─── Main export ─────────────────────────────────────────────────────
 export function PedigreeChart({ node }: { node: PedigreeNode }) {
-  const { slots, brackets, dupLinks } = useMemo(() => buildLayout(node), [node]);
+  const { slots, brackets, convLinks } = useMemo(() => buildLayout(node), [node]);
+
+  // Which canonical node IDs have convergent lines pointing TO them?
+  const sharedCanonIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const lnk of convLinks) {
+      // find the slot at (canonCol, canonY) and mark its node id
+      const canon = slots.find(
+        (s) => s.col === lnk.canonCol && Math.abs(s.yCenter - lnk.canonY) < 1 && s.kind === "normal"
+      );
+      if (canon?.node?.id) ids.add(canon.node.id);
+    }
+    return ids;
+  }, [slots, convLinks]);
+
+  const hasShared = convLinks.length > 0;
 
   return (
     <div className="overflow-x-auto pb-2">
@@ -199,68 +214,76 @@ export function PedigreeChart({ node }: { node: PedigreeNode }) {
       >
         <defs>
           <marker
-            id="arrow-dup"
-            markerWidth="8"
-            markerHeight="8"
-            refX="4"
-            refY="4"
+            id="conv-arrow"
+            markerWidth="7"
+            markerHeight="7"
+            refX="3.5"
+            refY="3.5"
             orient="auto"
           >
-            <path d="M0,0 L8,4 L0,8 Z" fill="#f59e0b" />
+            <circle cx="3.5" cy="3.5" r="3" fill="#64748b" />
           </marker>
         </defs>
 
-        {/* ── Bracket connectors (normal tree edges) ── */}
+        {/* ── Standard bracket connectors ── */}
         {brackets.map((b, i) => {
-          const px = nodeX(b.col) + NODE_W;        // parent right edge
-          const cx = nodeX(b.col + 1);             // child left edge
-          const vx = px + COL_GAP / 2;            // vertical bar x
+          const px = b.col * COL_W + NODE_W;          // parent right edge
+          const cx = (b.col + 1) * COL_W;             // child left edge
+          const vx = px + COL_GAP / 2;                // bracket vertical bar
 
           return (
-            <g key={i} stroke="#94a3b8" strokeWidth={2} fill="none" strokeLinecap="round">
-              {/* Horizontal from parent to vertical bar */}
+            <g key={i} stroke="#94a3b8" strokeWidth={1.8} fill="none" strokeLinecap="round">
               <line x1={px} y1={b.parentY} x2={vx} y2={b.parentY} />
-              {/* Vertical bar connecting sire and dam */}
-              <line x1={vx} y1={b.topChildY} x2={vx} y2={b.botChildY} />
-              {/* Horizontal to top child (sire) */}
-              <line x1={vx} y1={b.topChildY} x2={cx} y2={b.topChildY} />
-              {/* Horizontal to bottom child (dam) */}
-              <line x1={vx} y1={b.botChildY} x2={cx} y2={b.botChildY} />
+              <line x1={vx} y1={b.topY}    x2={vx} y2={b.botY} />
+              <line x1={vx} y1={b.topY}    x2={cx} y2={b.topY} />
+              <line x1={vx} y1={b.botY}    x2={cx} y2={b.botY} />
             </g>
           );
         })}
 
-        {/* ── Duplicate cross-links (dashed amber, routed around right edge) ── */}
-        {dupLinks.map((link, i) => (
-          <path
-            key={i}
-            d={dupPath(link)}
-            stroke="#f59e0b"
-            strokeWidth={1.5}
-            strokeDasharray="5,4"
-            fill="none"
-            markerEnd="url(#arrow-dup)"
-          />
+        {/* ── Convergent lines: solid curves from canonical to duplicate slot ── */}
+        {convLinks.map((lnk, i) => (
+          <g key={i}>
+            <path
+              d={convergentPath(lnk)}
+              stroke="#475569"
+              strokeWidth={2}
+              fill="none"
+              strokeLinecap="round"
+            />
+            {/* Dot at destination (duplicate slot position) */}
+            <circle
+              cx={lnk.dupCol * COL_W}
+              cy={lnk.dupY}
+              r={4}
+              fill="#64748b"
+            />
+            {/* Dot at origin (canonical box left edge) */}
+            <circle
+              cx={lnk.canonCol * COL_W}
+              cy={lnk.canonY}
+              r={3}
+              fill="#64748b"
+            />
+          </g>
         ))}
 
-        {/* ── Node boxes ── */}
+        {/* ── Node boxes (on top of lines) ── */}
         {slots.map((slot) => (
-          <NodeBox key={slot.key} slot={slot} />
+          <NodeBox
+            key={slot.key}
+            slot={slot}
+            isShared={!!(slot.node?.id && sharedCanonIds.has(slot.node.id))}
+          />
         ))}
       </svg>
 
-      {/* Legend — only shown when there are duplicates */}
-      {dupLinks.length > 0 && (
-        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground border border-dashed border-amber-300 bg-amber-50/60 rounded-md px-3 py-1.5 w-fit">
-          <svg width={36} height={14}>
-            <defs>
-              <marker id="arrow-dup-legend" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-                <path d="M0,0 L6,3 L0,6 Z" fill="#f59e0b" />
-              </marker>
-            </defs>
-            <line x1={0} y1={7} x2={30} y2={7} stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="4,3" markerEnd="url(#arrow-dup-legend)" />
-          </svg>
-          เส้นประสีทอง = บรรพบุรุษร่วม (ตัวเดียวกัน ไม่ซ้ำ)
+      {/* Legend — only when shared ancestors exist */}
+      {hasShared && (
+        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground border border-amber-200 bg-amber-50/60 rounded-md px-3 py-1.5 w-fit">
+          <span className="inline-block w-4 h-0.5 bg-slate-500 mr-1" />
+          <span className="inline-block w-3 h-3 rounded-full border-2 border-amber-400 ring-2 ring-amber-400 ring-offset-1 mr-1" />
+          กล่องที่มีวงแหวนทอง = บรรพบุรุษร่วม เส้นทึบแสดงการสืบทอดจากจุดเดียว
         </div>
       )}
     </div>

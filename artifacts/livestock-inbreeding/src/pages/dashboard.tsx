@@ -1,42 +1,91 @@
-import { useGetInbreedingStats, useListInbreedingHistory } from "@workspace/api-client-react";
+import { useGetInbreedingStats, useListInbreedingHistory, useListAnimals, useListFarms } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PawPrint, Activity, Calculator, AlertTriangle } from "lucide-react";
 import { RiskBadge } from "@/components/ui/risk-badge";
+import { useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useGetInbreedingStats();
   const { data: history, isLoading: historyLoading } = useListInbreedingHistory();
+  const { data: animals } = useListAnimals();
+  const { data: farms } = useListFarms();
+
+  const [selectedFarm, setSelectedFarm] = useState<string>("all");
+
+  const displayStats = (() => {
+    if (selectedFarm === "all") return stats;
+    if (!animals) return stats;
+    
+    const filteredAnimals = animals.filter(a => a.farm === selectedFarm);
+    const totalAnimals = filteredAnimals.length;
+    let totalF = 0;
+    let riskyPairings = 0;
+    
+    filteredAnimals.forEach(a => {
+      if (a.fCoefficient) {
+        totalF += a.fCoefficient;
+        if (a.fCoefficient > 0.125) riskyPairings++;
+      }
+    });
+    
+    const averageF = totalAnimals > 0 ? totalF / totalAnimals : 0;
+    
+    return {
+      ...stats,
+      totalAnimals,
+      averageF,
+      riskyPairings,
+      totalCalculations: stats?.totalCalculations || 0,
+      riskBreakdown: stats?.riskBreakdown || []
+    };
+  })();
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">ภาพรวมฟาร์ม</h1>
-        <p className="text-muted-foreground mt-1">สถิติอัตราเลือดชิดและภาพรวมประชากรสัตว์</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">ภาพรวมข้อมูลพันธุ์ประวัติ</h1>
+          <p className="text-muted-foreground mt-1">ข้อมูลสถิติและพันธุ์ประวัติสัตว์ทั้งหมด</p>
+        </div>
+        <div className="w-full sm:w-auto">
+          <Select value={selectedFarm} onValueChange={setSelectedFarm}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="เลือกฟาร์ม" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">ทุกฟาร์ม</SelectItem>
+              {farms?.map(farm => (
+                <SelectItem key={farm} value={farm}>{farm}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
           title="สัตว์ในระบบทั้งหมด" 
-          value={stats?.totalAnimals} 
+          value={displayStats?.totalAnimals} 
           icon={<PawPrint className="w-4 h-4 text-primary" />} 
           loading={statsLoading} 
         />
         <StatCard 
           title="คำนวณแล้ว (ครั้ง)" 
-          value={stats?.totalCalculations} 
+          value={displayStats?.totalCalculations} 
           icon={<Calculator className="w-4 h-4 text-blue-600" />} 
           loading={statsLoading} 
         />
         <StatCard 
           title="อัตราเลือดชิดเฉลี่ย" 
-          value={stats ? `${(stats.averageF * 100).toFixed(2)}%` : undefined} 
+          value={displayStats ? `${(displayStats.averageF * 100).toFixed(2)}%` : undefined} 
           icon={<Activity className="w-4 h-4 text-green-600" />} 
           loading={statsLoading} 
         />
         <StatCard 
           title="การจับคู่ที่มีความเสี่ยง" 
-          value={stats?.riskyPairings} 
+          value={displayStats?.riskyPairings} 
           icon={<AlertTriangle className="w-4 h-4 text-orange-500" />} 
           loading={statsLoading} 
         />

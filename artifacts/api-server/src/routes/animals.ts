@@ -84,10 +84,10 @@ router.get("/animals/farms", async (req, res) => {
 router.get("/animals/template", (_req, res) => {
   const wb = XLSX.utils.book_new();
   const data = [
-    ["Farm", "Animal_ID", "Sire_ID", "Dam_ID", "Sex", "Species", "Name", "BirthDate", "Notes"],
-    ["ฟาร์มวิจัย A", "M01", "Unknown", "Unknown", "M", "กระบือ", "กระบือทดสอบ 01", "2020-01-15", ""],
-    ["ฟาร์มวิจัย A", "F01", "Unknown", "Unknown", "F", "กระบือ", "กระบือทดสอบ 02", "2020-03-20", ""],
-    ["ฟาร์มวิจัย A", "C01", "M01", "F01", "M", "กระบือ", "กระบือลูก 01", "2022-06-10", ""],
+    ["Farm", "Animal_ID", "Sire_ID", "Dam_ID", "Sex"],
+    ["ฟาร์มวิจัย A", "M01", "Unknown", "Unknown", "M"],
+    ["ฟาร์มวิจัย A", "F01", "Unknown", "Unknown", "F"],
+    ["ฟาร์มวิจัย A", "C01", "M01", "F01", "M"],
   ];
   const ws = XLSX.utils.aoa_to_sheet(data);
   XLSX.utils.book_append_sheet(wb, ws, "Pedigree");
