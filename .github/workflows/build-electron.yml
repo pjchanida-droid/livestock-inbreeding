@@ -7,36 +7,23 @@ on:
       - 'v*'
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  build-assets:
+    name: Build frontend & API (Linux)
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js 24
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '24'
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 10
 
-      - name: Strip Linux-only overrides from pnpm-workspace.yaml
-        shell: node {0}
-        run: |
-          const fs = require('fs');
-          let txt = fs.readFileSync('pnpm-workspace.yaml', 'utf8');
-          // Remove everything from the "overrides:" key to end of file
-          const idx = txt.indexOf('\noverrides:');
-          if (idx !== -1) txt = txt.slice(0, idx);
-          fs.writeFileSync('pnpm-workspace.yaml', txt);
-          console.log('pnpm-workspace.yaml patched — overrides removed');
-
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build frontend
         run: pnpm --filter @workspace/livestock-inbreeding run build
@@ -44,15 +31,49 @@ jobs:
       - name: Build API server
         run: pnpm --filter @workspace/api-server run build
 
-      - name: Build Electron (compile TypeScript)
+      - name: Upload built assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-assets
+          path: |
+            artifacts/livestock-inbreeding/dist
+            artifacts/api-server/dist
+          retention-days: 1
+
+  package-windows:
+    name: Package Windows installer
+    needs: build-assets
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Download built assets
+        uses: actions/download-artifact@v4
+        with:
+          name: built-assets
+
+      - name: Install Electron dependencies only
+        working-directory: artifacts/electron-app
+        run: pnpm install
+
+      - name: Build Electron TypeScript
         working-directory: artifacts/electron-app
         run: pnpm run build
 
-      - name: Create icon placeholder if missing
+      - name: Create icon if missing
         shell: pwsh
         run: |
           $iconDir = "artifacts/electron-app/assets"
-          if (-not (Test-Path $iconDir)) { New-Item -ItemType Directory -Path $iconDir }
+          if (-not (Test-Path $iconDir)) { New-Item -ItemType Directory -Path $iconDir | Out-Null }
           if (-not (Test-Path "$iconDir/icon.ico")) {
             Invoke-WebRequest -Uri "https://raw.githubusercontent.com/electron/electron/main/shell/browser/resources/win/electron.ico" -OutFile "$iconDir/icon.ico"
           }
@@ -63,7 +84,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload installer artifact
+      - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
           name: livestock-inbreeding-windows-installer
