@@ -300,29 +300,52 @@ function ManualPairingTab() {
   );
 }
 
+// Extended type to include sireFarm returned by the API
+type SireRec = {
+  sireId: number;
+  sireCode: string;
+  sireName: string;
+  sireFarm?: string | null;
+  fCoefficient: number;
+  rCoefficient: number;
+  riskLevel: string;
+  riskLabel: string;
+};
+
 // ─── Tab 2: Recommended pairing ────────────────────────────────────
 function RecommendedPairingTab() {
   const { data: animals } = useListAnimals();
   const { data: farms = [] } = useListFarms();
   const recommendMutation = useRecommendSires();
 
-  const [farmFilter, setFarmFilter] = useState<string>("all");
+  const [damFarmFilter, setDamFarmFilter] = useState<string>("all");
+  const [sireFarmFilter, setSireFarmFilter] = useState<string>("all");
   const [damId, setDamId] = useState<string>("");
   const [open, setOpen] = useState(false);
   const prevDamId = useRef("");
 
   const females = (animals?.filter((a) => a.sex === "female") || []).filter(
-    (a) => farmFilter === "all" || a.farm === farmFilter
+    (a) => damFarmFilter === "all" || a.farm === damFarmFilter
   );
   const selectedDam = animals?.find((a) => a.id.toString() === damId);
 
   function handleEvaluate() {
     if (!damId) return;
-    recommendMutation.mutate({ data: { damId: Number(damId), limit: 50 } });
+    setSireFarmFilter("all");
+    recommendMutation.mutate({ data: { damId: Number(damId), limit: 500 } });
     prevDamId.current = damId;
   }
 
-  const recs = recommendMutation.data ?? [];
+  const allRecs = (recommendMutation.data ?? []) as SireRec[];
+
+  // Unique farms from sires in result set
+  const sireFarms = Array.from(
+    new Set(allRecs.map((r) => r.sireFarm).filter((f): f is string => !!f))
+  ).sort();
+
+  const recs = sireFarmFilter === "all"
+    ? allRecs
+    : allRecs.filter((r) => r.sireFarm === sireFarmFilter);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -335,10 +358,10 @@ function RecommendedPairingTab() {
           <CardDescription>เลือกตัวเมียที่ต้องการหาคู่ผสม ระบบจะแนะนำพ่อพันธุ์ที่ลดค่าเลือดชิดมากที่สุด</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Farm filter */}
+          {/* Dam farm filter */}
           <div>
-            <label className="text-sm font-medium mb-1 block">ฟาร์ม</label>
-            <Select value={farmFilter} onValueChange={(v) => { setFarmFilter(v); setDamId(""); }}>
+            <label className="text-sm font-medium mb-1 block">ฟาร์มแม่พันธุ์</label>
+            <Select value={damFarmFilter} onValueChange={(v) => { setDamFarmFilter(v); setDamId(""); }}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="ทุกฟาร์ม" />
               </SelectTrigger>
@@ -417,22 +440,45 @@ function RecommendedPairingTab() {
         ) : recs.length > 0 ? (
           <Card className="shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-primary" />
-                พ่อพันธุ์แนะนำสำหรับ {selectedDam?.name}
-              </CardTitle>
-              <CardDescription>เรียงตามค่าเลือดชิดของลูกจากน้อยไปมาก · {recs.length} รายการ</CardDescription>
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                    พ่อพันธุ์แนะนำสำหรับ {selectedDam?.name}
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    เรียงตามค่าเลือดชิดของลูกจากน้อยไปมาก · แสดง {recs.length} / {allRecs.length} รายการ
+                  </CardDescription>
+                </div>
+                {sireFarms.length > 0 && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">ฟาร์มพ่อพันธุ์:</span>
+                    <Select value={sireFarmFilter} onValueChange={setSireFarmFilter}>
+                      <SelectTrigger className="w-[160px] h-8 text-sm">
+                        <SelectValue placeholder="ทุกฟาร์ม" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">ทุกฟาร์ม</SelectItem>
+                        {sireFarms.map((f) => (
+                          <SelectItem key={f} value={f}>{f}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-muted/50 border-b border-border">
-                      <th className="text-left px-4 py-3 font-semibold text-xs text-muted-foreground w-12">#</th>
+                      <th className="text-left px-4 py-3 font-semibold text-xs text-muted-foreground w-10">#</th>
                       <th className="text-left px-4 py-3 font-semibold text-xs text-muted-foreground">รหัส</th>
                       <th className="text-left px-4 py-3 font-semibold text-xs text-muted-foreground">ชื่อพ่อพันธุ์</th>
+                      <th className="text-left px-4 py-3 font-semibold text-xs text-muted-foreground">ฟาร์ม</th>
                       <th className="text-center px-4 py-3 font-semibold text-xs text-muted-foreground">F ลูก (%)</th>
-                      <th className="text-center px-4 py-3 font-semibold text-xs text-muted-foreground">ความสัมพันธ์ R (%)</th>
+                      <th className="text-center px-4 py-3 font-semibold text-xs text-muted-foreground">R (%)</th>
                       <th className="text-right px-4 py-3 font-semibold text-xs text-muted-foreground">ความเสี่ยง</th>
                     </tr>
                   </thead>
@@ -443,12 +489,13 @@ function RecommendedPairingTab() {
                         <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{idx + 1}</td>
                         <td className="px-4 py-3 font-semibold">{rec.sireCode}</td>
                         <td className="px-4 py-3 text-muted-foreground">{rec.sireName}</td>
+                        <td className="px-4 py-3 text-muted-foreground text-xs">{rec.sireFarm ?? "—"}</td>
                         <td className="px-4 py-3 text-center">
                           <span className={`font-bold ${rec.fCoefficient === 0 ? "text-green-600" : rec.fCoefficient > 0.125 ? "text-red-600" : "text-orange-500"}`}>
                             {(rec.fCoefficient * 100).toFixed(2)}%
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center text-muted-foreground">
+                        <td className="px-4 py-3 text-center text-muted-foreground text-xs">
                           {(rec.rCoefficient * 100).toFixed(2)}%
                         </td>
                         <td className="px-4 py-3 text-right">

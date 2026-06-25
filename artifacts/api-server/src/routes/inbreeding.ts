@@ -213,6 +213,7 @@ router.post("/inbreeding/recommend-sires", async (req, res) => {
         sireId: sire.id,
         sireName: sire.name,
         sireCode: sire.code,
+        sireFarm: sire.farm ?? null,
         fCoefficient: fOffspring,
         fPercent: fOffspring * 100,
         rCoefficient: rSireDam,
@@ -226,7 +227,7 @@ router.post("/inbreeding/recommend-sires", async (req, res) => {
     // Sort by fCoefficient ascending (lowest inbreeding first), then by rCoefficient ascending
     recommendations.sort((a, b) => a.fCoefficient - b.fCoefficient || a.rCoefficient - b.rCoefficient);
 
-    return res.json(recommendations.slice(0, Math.min(Number(limit), 20)));
+    return res.json(recommendations.slice(0, Math.min(Number(limit), 500)));
   } catch (err) {
     req.log.error({ err }, "recommendSires failed");
     return res.status(500).json({ error: "Internal server error" });
