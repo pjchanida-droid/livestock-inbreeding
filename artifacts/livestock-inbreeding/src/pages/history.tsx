@@ -4,6 +4,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { RiskBadge } from "@/components/ui/risk-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
+function BiHead({ th, en }: { th: string; en: string }) {
+  return (
+    <div className="flex flex-col leading-tight">
+      <span>{th}</span>
+      <span className="text-[10px] opacity-50 font-normal">{en}</span>
+    </div>
+  );
+}
+
 export default function History() {
   const { data: history, isLoading } = useListInbreedingHistory();
 
@@ -11,7 +20,9 @@ export default function History() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div>
         <h1 className="text-3xl font-bold text-foreground">ประวัติการคำนวณ</h1>
-        <p className="text-muted-foreground mt-1">บันทึกประวัติการคำนวณอัตราเลือดชิดทั้งหมดในระบบ</p>
+        <p className="text-muted-foreground mt-1">
+          บันทึกประวัติการคำนวณอัตราเลือดชิดทั้งหมดในระบบ <span className="text-xs opacity-60">/ All Inbreeding Calculation Records</span>
+        </p>
       </div>
 
       <Card>
@@ -19,11 +30,11 @@ export default function History() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
-                <TableHead>วันเวลาที่คำนวณ</TableHead>
-                <TableHead>พ่อพันธุ์</TableHead>
-                <TableHead>แม่พันธุ์</TableHead>
-                <TableHead className="text-right">ค่า F (%)</TableHead>
-                <TableHead>ระดับความเสี่ยง</TableHead>
+                <TableHead><BiHead th="วันเวลาที่คำนวณ" en="Date / Time" /></TableHead>
+                <TableHead><BiHead th="พ่อพันธุ์" en="Sire" /></TableHead>
+                <TableHead><BiHead th="แม่พันธุ์" en="Dam" /></TableHead>
+                <TableHead className="text-right"><BiHead th="ค่า F (%)" en="F Coefficient" /></TableHead>
+                <TableHead><BiHead th="ระดับความเสี่ยง" en="Risk Level" /></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -40,7 +51,7 @@ export default function History() {
               ) : history?.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
-                    ไม่มีประวัติการคำนวณ
+                    ไม่มีประวัติการคำนวณ / No calculation history
                   </TableCell>
                 </TableRow>
               ) : (

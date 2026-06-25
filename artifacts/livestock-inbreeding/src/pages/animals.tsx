@@ -172,26 +172,38 @@ export default function Animals() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">ทะเบียนสัตว์</h1>
-          <p className="text-muted-foreground mt-1">จัดการข้อมูลสัตว์ในฟาร์มทั้งหมด</p>
+          <p className="text-muted-foreground mt-1">
+            จัดการข้อมูลสัตว์ในฟาร์มทั้งหมด <span className="text-xs opacity-60">/ Animal Registry Management</span>
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" className="flex items-center gap-2" onClick={handleExport}>
             <FileSpreadsheet className="w-4 h-4" />
-            Export Excel
+            <div className="flex flex-col items-start leading-tight">
+              <span>Export Excel</span>
+              <span className="text-[9px] opacity-50">ส่งออกข้อมูล</span>
+            </div>
           </Button>
-          
+
           <Dialog open={importOpen} onOpenChange={setImportOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="flex items-center gap-2">
                 <Upload className="w-4 h-4" />
-                นำเข้า Excel
+                <div className="flex flex-col items-start leading-tight">
+                  <span>นำเข้า Excel</span>
+                  <span className="text-[9px] opacity-50">Import Excel</span>
+                </div>
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>นำเข้าข้อมูลสัตว์จาก Excel</DialogTitle>
+                <DialogTitle>
+                  นำเข้าข้อมูลสัตว์จาก Excel
+                  <span className="block text-sm font-normal text-muted-foreground">Import Animal Data from Excel</span>
+                </DialogTitle>
                 <DialogDescription>
                   ดาวน์โหลดไฟล์แม่แบบและกรอกข้อมูลสัตว์ให้ครบถ้วน จากนั้นอัปโหลดไฟล์เข้าระบบ
+                  <span className="block text-[11px] mt-0.5">Download the template, fill in animal data, then upload the file.</span>
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-6 py-4">
@@ -199,27 +211,32 @@ export default function Animals() {
                   <div className="flex items-center gap-3">
                     <FileSpreadsheet className="w-8 h-8 text-primary" />
                     <div>
-                      <h4 className="font-medium text-sm">ไฟล์แม่แบบ Excel</h4>
-                      <p className="text-xs text-muted-foreground">โครงสร้างไฟล์สำหรับนำเข้าข้อมูล</p>
+                      <h4 className="font-medium text-sm">ไฟล์แม่แบบ Excel <span className="text-[10px] text-muted-foreground font-normal">/ Template</span></h4>
+                      <p className="text-xs text-muted-foreground">โครงสร้างไฟล์สำหรับนำเข้าข้อมูล / File structure for import</p>
                     </div>
                   </div>
-                  <Button variant="secondary" size="sm" onClick={handleDownloadTemplate}>ดาวน์โหลดแม่แบบ</Button>
+                  <Button variant="secondary" size="sm" onClick={handleDownloadTemplate}>
+                    <div className="flex flex-col items-center leading-tight">
+                      <span>ดาวน์โหลดแม่แบบ</span>
+                      <span className="text-[9px] opacity-60">Download Template</span>
+                    </div>
+                  </Button>
                 </div>
-                
+
                 <div className="space-y-2 border-2 border-dashed border-border rounded-lg p-6 text-center">
                   <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
-                  <h4 className="font-medium text-sm">อัปโหลดไฟล์ที่กรอกข้อมูลแล้ว</h4>
-                  <p className="text-xs text-muted-foreground mb-4">รองรับไฟล์ .xlsx</p>
+                  <h4 className="font-medium text-sm">อัปโหลดไฟล์ที่กรอกข้อมูลแล้ว <span className="text-[10px] font-normal text-muted-foreground">/ Upload Filled File</span></h4>
+                  <p className="text-xs text-muted-foreground mb-4">รองรับไฟล์ .xlsx / Supports .xlsx files</p>
                   <div className="relative">
-                    <Input 
-                      type="file" 
-                      accept=".xlsx, .xls" 
+                    <Input
+                      type="file"
+                      accept=".xlsx, .xls"
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       onChange={handleImport}
                       disabled={importing}
                     />
                     <Button disabled={importing}>
-                      {importing ? "กำลังนำเข้า..." : "เลือกไฟล์ Excel"}
+                      {importing ? "กำลังนำเข้า... / Importing..." : "เลือกไฟล์ Excel / Choose File"}
                     </Button>
                   </div>
                 </div>
@@ -230,7 +247,10 @@ export default function Animals() {
           <Button asChild className="shrink-0 bg-primary text-primary-foreground">
             <Link href="/animals/new" className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
-              เพิ่มข้อมูลสัตว์
+              <div className="flex flex-col items-start leading-tight">
+                <span>เพิ่มข้อมูลสัตว์</span>
+                <span className="text-[9px] opacity-70">Add Animal</span>
+              </div>
             </Link>
           </Button>
         </div>
@@ -240,8 +260,8 @@ export default function Animals() {
         <div className="p-4 border-b border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="flex items-center gap-3 flex-1">
             <Search className="w-5 h-5 text-muted-foreground" />
-            <Input 
-              placeholder="ค้นหาชื่อ หรือ รหัสสัตว์..." 
+            <Input
+              placeholder="ค้นหาชื่อ หรือ รหัสสัตว์... / Search name or code..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="max-w-sm border-0 focus-visible:ring-0 px-0"
@@ -255,7 +275,10 @@ export default function Animals() {
               className="flex items-center gap-2"
             >
               <ArrowDownUp className="w-4 h-4" />
-              {sortByF ? "เรียงตาม F ↓" : "ค่าเลือดชิด"}
+              <div className="flex flex-col items-start leading-tight">
+                <span>{sortByF ? "เรียงตาม F ↓" : "ค่าเลือดชิด"}</span>
+                <span className="text-[9px] opacity-50">{sortByF ? "Sorted by F" : "Sort by Inbreeding"}</span>
+              </div>
             </Button>
             <Select value={selectedFarm} onValueChange={setSelectedFarm}>
               <SelectTrigger className="w-[180px]">
@@ -274,13 +297,13 @@ export default function Animals() {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
-                <TableHead>รหัส</TableHead>
-                <TableHead>ชื่อสัตว์</TableHead>
-                <TableHead>ฟาร์ม</TableHead>
-                <TableHead>เพศ</TableHead>
-                <TableHead>สายเลือด (พ่อ/แม่)</TableHead>
-                <TableHead>อัตราเลือดชิด (%)</TableHead>
-                <TableHead className="text-right">จัดการ</TableHead>
+                <TableHead><div className="flex flex-col leading-tight"><span>รหัส</span><span className="text-[10px] opacity-50 font-normal">Code</span></div></TableHead>
+                <TableHead><div className="flex flex-col leading-tight"><span>ชื่อสัตว์</span><span className="text-[10px] opacity-50 font-normal">Name</span></div></TableHead>
+                <TableHead><div className="flex flex-col leading-tight"><span>ฟาร์ม</span><span className="text-[10px] opacity-50 font-normal">Farm</span></div></TableHead>
+                <TableHead><div className="flex flex-col leading-tight"><span>เพศ</span><span className="text-[10px] opacity-50 font-normal">Sex</span></div></TableHead>
+                <TableHead><div className="flex flex-col leading-tight"><span>สายเลือด (พ่อ/แม่)</span><span className="text-[10px] opacity-50 font-normal">Lineage (Sire/Dam)</span></div></TableHead>
+                <TableHead><div className="flex flex-col leading-tight"><span>อัตราเลือดชิด (%)</span><span className="text-[10px] opacity-50 font-normal">Inbreeding Coeff.</span></div></TableHead>
+                <TableHead className="text-right"><div className="flex flex-col items-end leading-tight"><span>จัดการ</span><span className="text-[10px] opacity-50 font-normal">Actions</span></div></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -341,34 +364,47 @@ export default function Animals() {
       <Dialog open={!!editingAnimal} onOpenChange={(open) => !open && setEditingAnimal(null)}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>แก้ไขข้อมูลสัตว์</DialogTitle>
+            <DialogTitle>
+              แก้ไขข้อมูลสัตว์
+              <span className="block text-sm font-normal text-muted-foreground">Edit Animal Data</span>
+            </DialogTitle>
           </DialogHeader>
           <Form {...editForm}>
             <form onSubmit={editForm.handleSubmit(handleEditSubmit)} className="space-y-4">
               <FormField control={editForm.control} name="code" render={({ field }) => (
-                <FormItem><FormLabel>รหัส</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel><span>รหัส <span className="text-[10px] text-muted-foreground font-normal">/ Code</span></span></FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={editForm.control} name="name" render={({ field }) => (
-                <FormItem><FormLabel>ชื่อสัตว์</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel><span>ชื่อสัตว์ <span className="text-[10px] text-muted-foreground font-normal">/ Name</span></span></FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={editForm.control} name="species" render={({ field }) => (
-                <FormItem><FormLabel>สายพันธุ์</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel><span>สายพันธุ์ <span className="text-[10px] text-muted-foreground font-normal">/ Species</span></span></FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={editForm.control} name="farm" render={({ field }) => (
-                <FormItem><FormLabel>ฟาร์ม</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel><span>ฟาร์ม <span className="text-[10px] text-muted-foreground font-normal">/ Farm</span></span></FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={editForm.control} name="sex" render={({ field }) => (
-                <FormItem><FormLabel>เพศ</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="male">ผู้</SelectItem><SelectItem value="female">เมีย</SelectItem><SelectItem value="unknown">ไม่ระบุ</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                <FormItem><FormLabel><span>เพศ <span className="text-[10px] text-muted-foreground font-normal">/ Sex</span></span></FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="male">ผู้ / Male</SelectItem><SelectItem value="female">เมีย / Female</SelectItem><SelectItem value="unknown">ไม่ระบุ / Unknown</SelectItem></SelectContent></Select><FormMessage /></FormItem>
               )} />
               <FormField control={editForm.control} name="sireId" render={({ field }) => (
-                <FormItem><FormLabel>พ่อพันธุ์</FormLabel><Select onValueChange={(v) => field.onChange(v ? Number(v) : null)} value={field.value?.toString() || ""}><FormControl><SelectTrigger><SelectValue placeholder="เลือกพ่อพันธุ์" /></SelectTrigger></FormControl><SelectContent><SelectItem value=" ">ไม่ระบุ</SelectItem>{males.map(m => <SelectItem key={m.id} value={m.id.toString()}>{m.name} ({m.code})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                <FormItem><FormLabel><span>พ่อพันธุ์ <span className="text-[10px] text-muted-foreground font-normal">/ Sire</span></span></FormLabel><Select onValueChange={(v) => field.onChange(v ? Number(v) : null)} value={field.value?.toString() || ""}><FormControl><SelectTrigger><SelectValue placeholder="เลือกพ่อพันธุ์ / Select Sire" /></SelectTrigger></FormControl><SelectContent><SelectItem value=" ">ไม่ระบุ / None</SelectItem>{males.map(m => <SelectItem key={m.id} value={m.id.toString()}>{m.name} ({m.code})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
               )} />
               <FormField control={editForm.control} name="damId" render={({ field }) => (
-                <FormItem><FormLabel>แม่พันธุ์</FormLabel><Select onValueChange={(v) => field.onChange(v ? Number(v) : null)} value={field.value?.toString() || ""}><FormControl><SelectTrigger><SelectValue placeholder="เลือกแม่พันธุ์" /></SelectTrigger></FormControl><SelectContent><SelectItem value=" ">ไม่ระบุ</SelectItem>{females.map(f => <SelectItem key={f.id} value={f.id.toString()}>{f.name} ({f.code})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                <FormItem><FormLabel><span>แม่พันธุ์ <span className="text-[10px] text-muted-foreground font-normal">/ Dam</span></span></FormLabel><Select onValueChange={(v) => field.onChange(v ? Number(v) : null)} value={field.value?.toString() || ""}><FormControl><SelectTrigger><SelectValue placeholder="เลือกแม่พันธุ์ / Select Dam" /></SelectTrigger></FormControl><SelectContent><SelectItem value=" ">ไม่ระบุ / None</SelectItem>{females.map(f => <SelectItem key={f.id} value={f.id.toString()}>{f.name} ({f.code})</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
               )} />
               <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setEditingAnimal(null)}>ยกเลิก</Button>
-                <Button type="submit">บันทึก</Button>
+                <Button type="button" variant="outline" onClick={() => setEditingAnimal(null)}>
+                  <div className="flex flex-col items-center leading-tight">
+                    <span>ยกเลิก</span>
+                    <span className="text-[9px] opacity-50">Cancel</span>
+                  </div>
+                </Button>
+                <Button type="submit">
+                  <div className="flex flex-col items-center leading-tight">
+                    <span>บันทึก</span>
+                    <span className="text-[9px] opacity-70">Save</span>
+                  </div>
+                </Button>
               </div>
             </form>
           </Form>
@@ -378,15 +414,27 @@ export default function Animals() {
       <AlertDialog open={!!deletingAnimal} onOpenChange={(open) => !open && setDeletingAnimal(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+            <AlertDialogTitle>
+              ยืนยันการลบ
+              <span className="block text-sm font-normal text-muted-foreground">Confirm Deletion</span>
+            </AlertDialogTitle>
             <AlertDialogDescription>
               ยืนยันการลบ {deletingAnimal?.name}? ข้อมูลจะถูกลบถาวรและไม่สามารถกู้คืนได้
+              <span className="block text-[11px] mt-0.5">Confirm deleting {deletingAnimal?.name}? This action cannot be undone.</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+            <AlertDialogCancel>
+              <div className="flex flex-col items-center leading-tight">
+                <span>ยกเลิก</span>
+                <span className="text-[9px] opacity-50">Cancel</span>
+              </div>
+            </AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              ลบข้อมูล
+              <div className="flex flex-col items-center leading-tight">
+                <span>ลบข้อมูล</span>
+                <span className="text-[9px] opacity-70">Delete</span>
+              </div>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -165,33 +165,48 @@ function ManualPairingTab() {
       {/* Left: form */}
       <Card className="lg:col-span-1 shadow-sm">
         <CardHeader>
-          <CardTitle>เลือกคู่ผสมพันธุ์</CardTitle>
-          <CardDescription>เลือกฟาร์มและค้นหาสัตว์โดยพิมพ์รหัสหรือชื่อ</CardDescription>
+          <CardTitle>
+            <div className="flex flex-col leading-tight">
+              <span>เลือกคู่ผสมพันธุ์</span>
+              <span className="text-sm font-normal text-muted-foreground">Select Breeding Pair</span>
+            </div>
+          </CardTitle>
+          <CardDescription>เลือกฟาร์มและค้นหาสัตว์โดยพิมพ์รหัสหรือชื่อ / Filter by farm, search by code or name</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               <FormField control={form.control} name="sireId" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>พ่อพันธุ์ (ตัวผู้)</FormLabel>
+                  <FormLabel>
+                    <span>พ่อพันธุ์ (ตัวผู้) <span className="text-[10px] text-muted-foreground font-normal">/ Sire (Male)</span></span>
+                  </FormLabel>
                   <AnimalCombobox value={field.value} onChange={field.onChange}
-                    animals={males} placeholder="ค้นหาพ่อพันธุ์..." farms={farms} />
+                    animals={males} placeholder="ค้นหาพ่อพันธุ์... / Search sire..." farms={farms} />
                   <FormMessage />
                 </FormItem>
               )} />
 
               <FormField control={form.control} name="damId" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>แม่พันธุ์ (ตัวเมีย)</FormLabel>
+                  <FormLabel>
+                    <span>แม่พันธุ์ (ตัวเมีย) <span className="text-[10px] text-muted-foreground font-normal">/ Dam (Female)</span></span>
+                  </FormLabel>
                   <AnimalCombobox value={field.value} onChange={field.onChange}
-                    animals={females} placeholder="ค้นหาแม่พันธุ์..." farms={farms} />
+                    animals={females} placeholder="ค้นหาแม่พันธุ์... / Search dam..." farms={farms} />
                   <FormMessage />
                 </FormItem>
               )} />
 
               <Button type="submit" className="w-full" disabled={calculateMutation.isPending}>
-                {calculateMutation.isPending ? "กำลังคำนวณ..." : (
-                  <><Calculator className="w-4 h-4 mr-2" /> ประเมินผล</>
+                {calculateMutation.isPending ? "กำลังคำนวณ... / Calculating..." : (
+                  <>
+                    <Calculator className="w-4 h-4 mr-2" />
+                    <div className="flex flex-col items-start leading-tight">
+                      <span>ประเมินผล</span>
+                      <span className="text-[9px] opacity-70">Evaluate</span>
+                    </div>
+                  </>
                 )}
               </Button>
             </form>
@@ -206,9 +221,17 @@ function ManualPairingTab() {
             <CardHeader className="bg-primary/5 border-b border-primary/10 pb-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-2xl">ผลการคำนวณ (F Coefficient)</CardTitle>
+                  <CardTitle className="text-2xl">
+                    <div className="flex flex-col leading-tight">
+                      <span>ผลการคำนวณ (F Coefficient)</span>
+                      <span className="text-base font-normal text-muted-foreground">Inbreeding Calculation Result</span>
+                    </div>
+                  </CardTitle>
                   <CardDescription className="mt-1 text-base">
-                    พ่อ: <span className="font-semibold">{result.sireName}</span> × แม่:{" "}
+                    <span className="text-xs text-muted-foreground">พ่อ/Sire:</span>{" "}
+                    <span className="font-semibold">{result.sireName}</span>{" "}
+                    <span className="text-muted-foreground">×</span>{" "}
+                    <span className="text-xs text-muted-foreground">แม่/Dam:</span>{" "}
                     <span className="font-semibold">{result.damName}</span>
                   </CardDescription>
                 </div>
@@ -218,22 +241,34 @@ function ManualPairingTab() {
             <CardContent className="pt-6 space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-muted/20 rounded-lg p-4 border border-border">
-                  <div className="text-sm font-medium text-muted-foreground mb-1">ค่าเลือดชิดของพ่อพันธุ์เอง</div>
+                  <div className="flex flex-col leading-tight mb-1">
+                    <span className="text-sm font-medium text-muted-foreground">ค่าเลือดชิดของพ่อพันธุ์เอง</span>
+                    <span className="text-[10px] text-muted-foreground/50">Sire's Own Inbreeding (F)</span>
+                  </div>
                   <div className="text-2xl font-bold">{result.fSirePercent?.toFixed(2)}%</div>
                   <div className="text-xs text-muted-foreground">F = {result.fSire?.toFixed(4)}</div>
                 </div>
                 <div className="bg-muted/20 rounded-lg p-4 border border-border">
-                  <div className="text-sm font-medium text-muted-foreground mb-1">ค่าเลือดชิดของแม่พันธุ์เอง</div>
+                  <div className="flex flex-col leading-tight mb-1">
+                    <span className="text-sm font-medium text-muted-foreground">ค่าเลือดชิดของแม่พันธุ์เอง</span>
+                    <span className="text-[10px] text-muted-foreground/50">Dam's Own Inbreeding (F)</span>
+                  </div>
                   <div className="text-2xl font-bold">{result.fDamPercent?.toFixed(2)}%</div>
                   <div className="text-xs text-muted-foreground">F = {result.fDam?.toFixed(4)}</div>
                 </div>
                 <div className="bg-muted/20 rounded-lg p-4 border border-border">
-                  <div className="text-sm font-medium text-muted-foreground mb-1">ค่าความสัมพันธ์ระหว่างคู่ผสม (R)</div>
+                  <div className="flex flex-col leading-tight mb-1">
+                    <span className="text-sm font-medium text-muted-foreground">ค่าความสัมพันธ์ระหว่างคู่ผสม</span>
+                    <span className="text-[10px] text-muted-foreground/50">Relatedness Coefficient (R)</span>
+                  </div>
                   <div className="text-2xl font-bold text-secondary">{result.rPercent?.toFixed(2)}%</div>
                   <div className="text-xs text-muted-foreground">R = {result.rCoefficient?.toFixed(4)}</div>
                 </div>
                 <div className="bg-primary/10 rounded-lg p-4 border border-primary/20">
-                  <div className="text-sm font-medium text-primary mb-1">ค่าเลือดชิดของลูกที่คาดการณ์ (F)</div>
+                  <div className="flex flex-col leading-tight mb-1">
+                    <span className="text-sm font-medium text-primary">ค่าเลือดชิดของลูกที่คาดการณ์</span>
+                    <span className="text-[10px] text-primary/50">Predicted Offspring Inbreeding (F)</span>
+                  </div>
                   <div className="text-3xl font-black text-primary">{result.fPercent?.toFixed(2)}%</div>
                   <div className="text-xs text-primary/70">F = {result.fCoefficient?.toFixed(4)}</div>
                 </div>
@@ -242,7 +277,11 @@ function ManualPairingTab() {
               {predictedPedigree && (
                 <div>
                   <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-primary" /> แผนผังสายเลือดลูกที่คาดการณ์
+                    <Activity className="w-5 h-5 text-primary" />
+                    <div className="flex flex-col leading-tight">
+                      <span>แผนผังสายเลือดลูกที่คาดการณ์</span>
+                      <span className="text-xs font-normal text-muted-foreground">Predicted Offspring Pedigree</span>
+                    </div>
                   </h3>
                   <div className="overflow-x-auto bg-muted/10 rounded-lg p-4 border border-border">
                     <PedigreeChart node={predictedPedigree} />
@@ -253,7 +292,11 @@ function ManualPairingTab() {
               {result.commonAncestors.length > 0 && (
                 <div>
                   <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-                    <Dna className="w-5 h-5 text-primary" /> บรรพบุรุษร่วม (Common Ancestors)
+                    <Dna className="w-5 h-5 text-primary" />
+                    <div className="flex flex-col leading-tight">
+                      <span>บรรพบุรุษร่วม</span>
+                      <span className="text-xs font-normal text-muted-foreground">Common Ancestors</span>
+                    </div>
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {result.commonAncestors.map((ca, i) => (
@@ -262,7 +305,10 @@ function ManualPairingTab() {
                           <div className="font-medium">{ca.name}</div>
                           <div className="text-xs text-muted-foreground">{ca.code}</div>
                         </div>
-                        <div className="text-sm font-semibold">สมทบ: {(ca.contribution * 100).toFixed(2)}%</div>
+                        <div className="text-sm font-semibold">
+                          <span className="text-muted-foreground text-xs">สมทบ/Contrib.:</span>{" "}
+                          {(ca.contribution * 100).toFixed(2)}%
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -272,7 +318,11 @@ function ManualPairingTab() {
               {result.pathways.length > 0 && (
                 <div>
                   <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-primary" /> เส้นทางความสัมพันธ์ (Pathways)
+                    <Activity className="w-5 h-5 text-primary" />
+                    <div className="flex flex-col leading-tight">
+                      <span>เส้นทางความสัมพันธ์</span>
+                      <span className="text-xs font-normal text-muted-foreground">Relationship Pathways</span>
+                    </div>
                   </h3>
                   <div className="space-y-2 font-mono text-sm bg-slate-900 text-slate-200 p-4 rounded-lg overflow-x-auto">
                     {result.pathways.map((path, idx) => (
@@ -288,10 +338,13 @@ function ManualPairingTab() {
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
               <Info className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-bold mb-2">พร้อมสำหรับการประเมิน</h3>
+            <h3 className="text-xl font-bold mb-1">พร้อมสำหรับการประเมิน</h3>
+            <p className="text-xs text-muted-foreground/60 mb-2">Ready for Evaluation</p>
             <p className="text-muted-foreground max-w-md">
               กรุณาเลือกพ่อพันธุ์และแม่พันธุ์จากแบบฟอร์มด้านซ้ายมือ แล้วกดปุ่ม "ประเมินผล"
-              ระบบจะคำนวณอัตราเลือดชิดและประเมินระดับความเสี่ยงให้ทันที
+              <span className="block text-xs text-muted-foreground/60 mt-1">
+                Select a sire and dam from the form on the left, then click "Evaluate".
+              </span>
             </p>
           </Card>
         )}
@@ -353,20 +406,28 @@ function RecommendedPairingTab() {
       <Card className="lg:col-span-1 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" /> เลือกแม่พันธุ์
+            <Sparkles className="w-5 h-5 text-primary" />
+            <div className="flex flex-col leading-tight">
+              <span>เลือกแม่พันธุ์</span>
+              <span className="text-sm font-normal text-muted-foreground">Select Dam</span>
+            </div>
           </CardTitle>
-          <CardDescription>เลือกตัวเมียที่ต้องการหาคู่ผสม ระบบจะแนะนำพ่อพันธุ์ที่ลดค่าเลือดชิดมากที่สุด</CardDescription>
+          <CardDescription>เลือกตัวเมียที่ต้องการหาคู่ผสม ระบบจะแนะนำพ่อพันธุ์ที่ลดค่าเลือดชิดมากที่สุด
+            <span className="block text-[11px] mt-0.5">Select a female — the system ranks sires that minimize offspring inbreeding.</span>
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Dam farm filter */}
           <div>
-            <label className="text-sm font-medium mb-1 block">ฟาร์มแม่พันธุ์</label>
+            <label className="text-sm font-medium mb-1 block">
+              ฟาร์มแม่พันธุ์ <span className="text-[10px] text-muted-foreground font-normal">/ Dam Farm</span>
+            </label>
             <Select value={damFarmFilter} onValueChange={(v) => { setDamFarmFilter(v); setDamId(""); }}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="ทุกฟาร์ม" />
+                <SelectValue placeholder="ทุกฟาร์ม / All Farms" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">ทุกฟาร์ม</SelectItem>
+                <SelectItem value="all">ทุกฟาร์ม / All Farms</SelectItem>
                 {farms.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -374,7 +435,9 @@ function RecommendedPairingTab() {
 
           {/* Dam combobox */}
           <div>
-            <label className="text-sm font-medium mb-1 block">แม่พันธุ์ (ตัวเมีย)</label>
+            <label className="text-sm font-medium mb-1 block">
+              แม่พันธุ์ (ตัวเมีย) <span className="text-[10px] text-muted-foreground font-normal">/ Dam (Female)</span>
+            </label>
             <Popover open={open} onOpenChange={setOpen}>
               <PopoverTrigger asChild>
                 <Button variant="outline" role="combobox" aria-expanded={open}
@@ -413,8 +476,14 @@ function RecommendedPairingTab() {
           </div>
 
           <Button className="w-full" disabled={!damId || recommendMutation.isPending} onClick={handleEvaluate}>
-            {recommendMutation.isPending ? "กำลังประเมิน..." : (
-              <><Sparkles className="w-4 h-4 mr-2" /> ประเมินผล</>
+            {recommendMutation.isPending ? "กำลังประเมิน... / Evaluating..." : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                <div className="flex flex-col items-start leading-tight">
+                  <span>ประเมินผล</span>
+                  <span className="text-[9px] opacity-70">Find Best Sires</span>
+                </div>
+              </>
             )}
           </Button>
 
@@ -474,12 +543,12 @@ function RecommendedPairingTab() {
                   <thead>
                     <tr className="bg-muted/50 border-b border-border">
                       <th className="text-left px-4 py-3 font-semibold text-xs text-muted-foreground w-10">#</th>
-                      <th className="text-left px-4 py-3 font-semibold text-xs text-muted-foreground">รหัส</th>
-                      <th className="text-left px-4 py-3 font-semibold text-xs text-muted-foreground">ชื่อพ่อพันธุ์</th>
-                      <th className="text-left px-4 py-3 font-semibold text-xs text-muted-foreground">ฟาร์ม</th>
-                      <th className="text-center px-4 py-3 font-semibold text-xs text-muted-foreground">F ลูก (%)</th>
-                      <th className="text-center px-4 py-3 font-semibold text-xs text-muted-foreground">R (%)</th>
-                      <th className="text-right px-4 py-3 font-semibold text-xs text-muted-foreground">ความเสี่ยง</th>
+                      <th className="text-left px-4 py-3 font-semibold text-xs text-muted-foreground"><div className="flex flex-col leading-tight"><span>รหัส</span><span className="text-[10px] opacity-50 font-normal">Code</span></div></th>
+                      <th className="text-left px-4 py-3 font-semibold text-xs text-muted-foreground"><div className="flex flex-col leading-tight"><span>ชื่อพ่อพันธุ์</span><span className="text-[10px] opacity-50 font-normal">Sire Name</span></div></th>
+                      <th className="text-left px-4 py-3 font-semibold text-xs text-muted-foreground"><div className="flex flex-col leading-tight"><span>ฟาร์ม</span><span className="text-[10px] opacity-50 font-normal">Farm</span></div></th>
+                      <th className="text-center px-4 py-3 font-semibold text-xs text-muted-foreground"><div className="flex flex-col items-center leading-tight"><span>F ลูก (%)</span><span className="text-[10px] opacity-50 font-normal">Offspring F</span></div></th>
+                      <th className="text-center px-4 py-3 font-semibold text-xs text-muted-foreground"><div className="flex flex-col items-center leading-tight"><span>R (%)</span><span className="text-[10px] opacity-50 font-normal">Relatedness</span></div></th>
+                      <th className="text-right px-4 py-3 font-semibold text-xs text-muted-foreground"><div className="flex flex-col items-end leading-tight"><span>ความเสี่ยง</span><span className="text-[10px] opacity-50 font-normal">Risk Level</span></div></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -536,17 +605,26 @@ export default function Calculate() {
       <div>
         <h1 className="text-3xl font-bold text-foreground">จำลองการจับคู่ผสม</h1>
         <p className="text-muted-foreground mt-1">
-          วิเคราะห์ความสัมพันธ์ทางพันธุกรรมและคาดการณ์ผลลัพธ์ก่อนผสมพันธุ์จริง
+          วิเคราะห์ความสัมพันธ์ทางพันธุกรรมและคาดการณ์ผลลัพธ์ก่อนผสมพันธุ์จริง{" "}
+          <span className="text-xs opacity-60">/ Genetic Analysis & Mating Simulation</span>
         </p>
       </div>
 
       <Tabs defaultValue="manual">
         <TabsList className="mb-4">
           <TabsTrigger value="manual" className="flex items-center gap-2">
-            <Calculator className="w-4 h-4" /> จับคู่ผสมเอง
+            <Calculator className="w-4 h-4" />
+            <div className="flex flex-col items-start leading-tight">
+              <span>จับคู่ผสมเอง</span>
+              <span className="text-[9px] opacity-60">Manual Pairing</span>
+            </div>
           </TabsTrigger>
           <TabsTrigger value="recommend" className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4" /> คู่ผสมที่แนะนำ
+            <Sparkles className="w-4 h-4" />
+            <div className="flex flex-col items-start leading-tight">
+              <span>คู่ผสมที่แนะนำ</span>
+              <span className="text-[9px] opacity-60">Recommended Pairing</span>
+            </div>
           </TabsTrigger>
         </TabsList>
 

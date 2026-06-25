@@ -5,14 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Calculator } from "lucide-react";
 import { PedigreeChart, PedigreeNode } from "@/components/ui/pedigree-chart";
 
+function FieldLabel({ th, en }: { th: string; en: string }) {
+  return (
+    <div className="flex flex-col leading-tight">
+      <span className="text-sm text-muted-foreground">{th}</span>
+      <span className="text-[10px] text-muted-foreground/50">{en}</span>
+    </div>
+  );
+}
+
 export default function AnimalDetail() {
   const { id } = useParams();
   const animalId = Number(id);
-  
+
   const { data: animal, isLoading: animalLoading } = useGetAnimal(animalId);
   const { data: pedigree, isLoading: pedigreeLoading } = useGetAnimalPedigree(animalId);
 
-  if (animalLoading || !animal) return <div>กำลังโหลด...</div>;
+  if (animalLoading || !animal) return <div>กำลังโหลด... / Loading...</div>;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -23,13 +32,21 @@ export default function AnimalDetail() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-foreground">{animal.name}</h1>
-            <p className="text-muted-foreground mt-1">รหัส: {animal.code} • สายพันธุ์: {animal.species}</p>
+            <p className="text-muted-foreground mt-1">
+              รหัส / Code: <strong>{animal.code}</strong> · สายพันธุ์ / Species: {animal.species}
+            </p>
           </div>
         </div>
         <Button asChild className="bg-primary text-primary-foreground">
-          <Link href={`/calculate?sireId=${animal.sex === 'male' ? animal.id : ''}&damId=${animal.sex === 'female' ? animal.id : ''}`} className="flex items-center gap-2">
+          <Link
+            href={`/calculate?sireId=${animal.sex === 'male' ? animal.id : ''}&damId=${animal.sex === 'female' ? animal.id : ''}`}
+            className="flex items-center gap-2"
+          >
             <Calculator className="w-4 h-4" />
-            จำลองการผสมพันธุ์
+            <div className="flex flex-col items-start leading-tight">
+              <span>จำลองการผสมพันธุ์</span>
+              <span className="text-[10px] opacity-70">Simulate Mating</span>
+            </div>
           </Link>
         </Button>
       </div>
@@ -37,44 +54,53 @@ export default function AnimalDetail() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="md:col-span-1">
           <CardHeader>
-            <CardTitle>ข้อมูลทั่วไป</CardTitle>
+            <CardTitle>
+              <div className="flex flex-col leading-tight">
+                <span>ข้อมูลทั่วไป</span>
+                <span className="text-sm font-normal text-muted-foreground">General Information</span>
+              </div>
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-sm text-muted-foreground">เพศ</div>
-                <div className="font-medium">{animal.sex === 'male' ? 'ตัวผู้' : 'ตัวเมีย'}</div>
+                <FieldLabel th="เพศ" en="Sex" />
+                <div className="font-medium mt-0.5">
+                  {animal.sex === 'male' ? 'ตัวผู้ / Male' : 'ตัวเมีย / Female'}
+                </div>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">ฟาร์ม</div>
-                <div className="font-medium">{animal.farm || '-'}</div>
+                <FieldLabel th="ฟาร์ม" en="Farm" />
+                <div className="font-medium mt-0.5">{animal.farm || '—'}</div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-sm text-muted-foreground">วันเกิด</div>
-                <div className="font-medium">{animal.birthDate ? new Date(animal.birthDate).toLocaleDateString('th-TH') : '-'}</div>
+                <FieldLabel th="วันเกิด" en="Birth Date" />
+                <div className="font-medium mt-0.5">
+                  {animal.birthDate ? new Date(animal.birthDate).toLocaleDateString('th-TH') : '—'}
+                </div>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">ค่าเลือดชิดตัวเอง (F)</div>
-                <div className="font-medium text-primary">
-                  {animal.fCoefficient !== null && animal.fCoefficient !== undefined 
-                    ? `${(animal.fCoefficient * 100).toFixed(2)}%` 
-                    : '-'}
+                <FieldLabel th="ค่าเลือดชิดตัวเอง (F)" en="Own Inbreeding Coeff." />
+                <div className="font-medium text-primary mt-0.5">
+                  {animal.fCoefficient !== null && animal.fCoefficient !== undefined
+                    ? `${(animal.fCoefficient * 100).toFixed(2)}%`
+                    : '—'}
                 </div>
               </div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">พ่อพันธุ์</div>
-              <div className="font-medium">{animal.sireName || '-'}</div>
+              <FieldLabel th="พ่อพันธุ์" en="Sire" />
+              <div className="font-medium mt-0.5">{animal.sireName || '—'}</div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">แม่พันธุ์</div>
-              <div className="font-medium">{animal.damName || '-'}</div>
+              <FieldLabel th="แม่พันธุ์" en="Dam" />
+              <div className="font-medium mt-0.5">{animal.damName || '—'}</div>
             </div>
             {animal.notes && (
               <div>
-                <div className="text-sm text-muted-foreground">หมายเหตุ</div>
+                <FieldLabel th="หมายเหตุ" en="Notes" />
                 <div className="text-sm bg-muted/50 p-3 rounded-md mt-1">{animal.notes}</div>
               </div>
             )}
@@ -83,17 +109,26 @@ export default function AnimalDetail() {
 
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>แผนผังสายเลือด (Pedigree)</CardTitle>
+            <CardTitle>
+              <div className="flex flex-col leading-tight">
+                <span>แผนผังสายเลือด</span>
+                <span className="text-sm font-normal text-muted-foreground">Pedigree Chart</span>
+              </div>
+            </CardTitle>
           </CardHeader>
           <CardContent className="overflow-x-auto">
             {pedigreeLoading ? (
-              <div className="h-32 flex items-center justify-center text-muted-foreground">กำลังสร้างผังสายเลือด...</div>
+              <div className="h-32 flex items-center justify-center text-muted-foreground">
+                กำลังสร้างผังสายเลือด... / Building pedigree...
+              </div>
             ) : pedigree ? (
               <div className="min-w-[500px] py-4">
                 <PedigreeChart node={pedigree as PedigreeNode} />
               </div>
             ) : (
-              <div className="text-muted-foreground text-center py-8">ไม่พบข้อมูลสายเลือด</div>
+              <div className="text-muted-foreground text-center py-8">
+                ไม่พบข้อมูลสายเลือด / No pedigree data
+              </div>
             )}
           </CardContent>
         </Card>
