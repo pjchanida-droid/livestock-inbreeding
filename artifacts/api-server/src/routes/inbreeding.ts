@@ -137,7 +137,7 @@ router.get("/inbreeding/history", async (req, res) => {
         fDam: null,
         riskLevel: h.riskLevel,
         riskLabel: RISK_LABELS[h.riskLevel] ?? h.riskLevel,
-        calculatedAt: h.calculatedAt.toISOString(),
+        calculatedAt: h.calculatedAt,
       }))
     );
   } catch (err) {

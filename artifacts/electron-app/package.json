@@ -1,0 +1,63 @@
+{
+  "name": "livestock-inbreeding-electron",
+  "version": "1.0.0",
+  "description": "ระบบคำนวณอัตราเลือดชิดสำหรับปศุสัตว์",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "build": "tsc -p tsconfig.json",
+    "dist": "pnpm run build && electron-builder",
+    "dist:win": "pnpm run build && electron-builder --win"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "electron": "^36.4.0",
+    "electron-builder": "^26.0.12",
+    "typescript": "^5.9.2"
+  },
+  "build": {
+    "appId": "th.ac.livestock.inbreeding",
+    "productName": "ระบบคำนวณอัตราเลือดชิด",
+    "copyright": "Copyright 2024",
+    "asar": true,
+    "directories": {
+      "output": "dist-electron"
+    },
+    "extraResources": [
+      {
+        "from": "../../artifacts/api-server/dist",
+        "to": "server",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../../artifacts/livestock-inbreeding/dist",
+        "to": "frontend",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ระบบคำนวณอัตราเลือดชิด",
+      "installerLanguages": ["th_TH", "en_US"],
+      "language": "1054"
+    },
+    "files": [
+      "src/**/*.js",
+      "node_modules/**/*",
+      "package.json"
+    ]
+  }
+}

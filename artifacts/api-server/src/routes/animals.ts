@@ -49,7 +49,7 @@ async function loadAnimals(farm?: string | null) {
     sireName: a.sireId ? (idMap.get(a.sireId)?.name ?? null) : null,
     damName: a.damId ? (idMap.get(a.damId)?.name ?? null) : null,
     fCoefficient: F.get(a.code) ?? null,
-    createdAt: a.createdAt.toISOString(),
+    createdAt: a.createdAt,
   }));
 }
 
@@ -116,7 +116,7 @@ router.post("/animals/import", upload.single("file"), async (req, res) => {
     const errors: string[] = [];
 
     // Two-pass: first insert animals without parents, then link parents
-    const pending: Array<{ row: Record<string, string>; attempt: number }> = rows.map((r) => ({ row: r, attempt: 0 }));
+    const pending: Array<{ row: Record<string, unknown>; attempt: number }> = rows.map((r) => ({ row: r, attempt: 0 }));
     const maxPasses = 5;
 
     for (let pass = 0; pass < maxPasses && pending.length > 0; pass++) {
@@ -166,7 +166,7 @@ router.post("/animals/import", upload.single("file"), async (req, res) => {
           codeToId.set(code, created.id);
           inserted++;
         } catch (e: any) {
-          if (e?.code === "23505") {
+          if (e?.code === "23505" || String(e?.message).includes("UNIQUE")) {
             skipped++;
           } else {
             errors.push(`${code}: ${e?.message ?? "ข้อผิดพลาดไม่ทราบสาเหตุ"}`);
@@ -236,10 +236,10 @@ router.post("/animals", async (req, res) => {
       sireName: created.sireId ? (idMap.get(created.sireId)?.name ?? null) : null,
       damName: created.damId ? (idMap.get(created.damId)?.name ?? null) : null,
       fCoefficient: F.get(created.code) ?? null,
-      createdAt: created.createdAt.toISOString(),
+      createdAt: created.createdAt,
     });
   } catch (err: any) {
-    if (err?.code === "23505") {
+    if (err?.code === "23505" || String(err?.message).includes("UNIQUE")) {
       return res.status(400).json({ error: "รหัสสัตว์นี้มีอยู่แล้วในระบบ" });
     }
     req.log.error({ err }, "createAnimal failed");
@@ -277,7 +277,7 @@ router.get("/animals/:id", async (req, res) => {
       sireName: animal.sireId ? (idMap.get(animal.sireId)?.name ?? null) : null,
       damName: animal.damId ? (idMap.get(animal.damId)?.name ?? null) : null,
       fCoefficient: F.get(animal.code) ?? null,
-      createdAt: animal.createdAt.toISOString(),
+      createdAt: animal.createdAt,
     });
   } catch (err) {
     req.log.error({ err }, "getAnimal failed");
@@ -335,10 +335,10 @@ router.patch("/animals/:id", async (req, res) => {
       sireName: updated.sireId ? (idMap.get(updated.sireId)?.name ?? null) : null,
       damName: updated.damId ? (idMap.get(updated.damId)?.name ?? null) : null,
       fCoefficient: F.get(updated.code) ?? null,
-      createdAt: updated.createdAt.toISOString(),
+      createdAt: updated.createdAt,
     });
   } catch (err: any) {
-    if (err?.code === "23505") return res.status(400).json({ error: "รหัสสัตว์นี้มีอยู่แล้วในระบบ" });
+    if (err?.code === "23505" || String(err?.message).includes("UNIQUE")) return res.status(400).json({ error: "รหัสสัตว์นี้มีอยู่แล้วในระบบ" });
     req.log.error({ err }, "updateAnimal failed");
     return res.status(500).json({ error: "Internal server error" });
   }

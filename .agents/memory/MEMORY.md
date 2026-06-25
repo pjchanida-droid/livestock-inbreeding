@@ -1,1 +1,2 @@
 - [A-matrix base population assumption](a-matrix-base-pop.md) — unknown parents must be treated as distinct unrelated individuals (kinship=0), not a shared UNKNOWN node.
+- [SQLite via node:sqlite](sqlite-node-builtin.md) — use Node.js 24 built-in node:sqlite + drizzle-orm/sqlite-proxy; no native compilation needed (better-sqlite3 fails on Replit NixOS due to missing Python/gyp).
