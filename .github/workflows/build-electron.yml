@@ -24,6 +24,15 @@ jobs:
         with:
           version: 10
 
+      - name: Remove Linux-only overrides from workspace config
+        shell: pwsh
+        run: |
+          $content = Get-Content pnpm-workspace.yaml -Raw
+          # Remove the entire overrides block (Linux/macOS/Android-only exclusions)
+          # We keep the file but clear the overrides so Windows packages install correctly
+          $content = $content -replace '(?ms)^overrides:.*', ''
+          Set-Content pnpm-workspace.yaml $content
+
       - name: Get pnpm store directory
         id: pnpm-cache
         shell: bash
@@ -38,7 +47,7 @@ jobs:
             ${{ runner.os }}-pnpm-
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build frontend
         run: pnpm --filter @workspace/livestock-inbreeding run build
@@ -49,6 +58,16 @@ jobs:
       - name: Build Electron (compile TypeScript)
         working-directory: artifacts/electron-app
         run: pnpm run build
+
+      - name: Create icon placeholder if missing
+        shell: pwsh
+        run: |
+          $iconDir = "artifacts/electron-app/assets"
+          if (-not (Test-Path $iconDir)) { New-Item -ItemType Directory -Path $iconDir }
+          if (-not (Test-Path "$iconDir/icon.ico")) {
+            # Download a generic icon or create a minimal valid .ico
+            Invoke-WebRequest -Uri "https://raw.githubusercontent.com/electron/electron/main/shell/browser/resources/win/electron.ico" -OutFile "$iconDir/icon.ico"
+          }
 
       - name: Package Electron as Windows installer
         working-directory: artifacts/electron-app
