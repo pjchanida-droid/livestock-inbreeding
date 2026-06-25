@@ -32,7 +32,9 @@ import type {
   InbreedingResult,
   InbreedingStats,
   ListAnimalsParams,
-  PedigreeNode
+  PedigreeNode,
+  RecommendSiresRequest,
+  SireRecommendation
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -876,6 +878,77 @@ export function useGetInbreedingStats<TData = Awaited<ReturnType<typeof getInbre
 
 
 
+
+export const getRecommendSiresUrl = () => {
+
+
+
+
+  return `/api/inbreeding/recommend-sires`
+}
+
+/**
+ * @summary Recommend best sires for a given dam to minimize offspring inbreeding
+ */
+export const recommendSires = async (recommendSiresRequest: RecommendSiresRequest, options?: RequestInit): Promise<SireRecommendation[]> => {
+
+  return customFetch<SireRecommendation[]>(getRecommendSiresUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      recommendSiresRequest,)
+  }
+);}
+
+
+
+
+export const getRecommendSiresMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recommendSires>>, TError,{data: BodyType<RecommendSiresRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recommendSires>>, TError,{data: BodyType<RecommendSiresRequest>}, TContext> => {
+
+const mutationKey = ['recommendSires'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recommendSires>>, {data: BodyType<RecommendSiresRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  recommendSires(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecommendSiresMutationResult = NonNullable<Awaited<ReturnType<typeof recommendSires>>>
+    export type RecommendSiresMutationBody = BodyType<RecommendSiresRequest>
+    export type RecommendSiresMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Recommend best sires for a given dam to minimize offspring inbreeding
+ */
+export const useRecommendSires = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recommendSires>>, TError,{data: BodyType<RecommendSiresRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recommendSires>>,
+        TError,
+        {data: BodyType<RecommendSiresRequest>},
+        TContext
+      > => {
+      return useMutation(getRecommendSiresMutationOptions(options));
+    }
 
 export const getComputeAMatrixUrl = () => {
 

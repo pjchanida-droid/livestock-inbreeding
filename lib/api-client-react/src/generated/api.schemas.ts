@@ -186,6 +186,37 @@ export interface InbreedingStats {
   riskBreakdown: RiskBreakdownItem[];
 }
 
+export interface RecommendSiresRequest {
+  damId: number;
+  limit?: number;
+}
+
+export type SireRecommendationRiskLevel = typeof SireRecommendationRiskLevel[keyof typeof SireRecommendationRiskLevel];
+
+
+export const SireRecommendationRiskLevel = {
+  safe: 'safe',
+  low: 'low',
+  moderate: 'moderate',
+  high: 'high',
+  very_high: 'very_high',
+} as const;
+
+export interface SireRecommendation {
+  sireId: number;
+  sireName: string;
+  sireCode: string;
+  /** Predicted offspring F */
+  fCoefficient: number;
+  fPercent: number;
+  /** Relationship coefficient R between this sire and the dam */
+  rCoefficient: number;
+  rPercent?: number;
+  fSire?: number;
+  riskLevel: SireRecommendationRiskLevel;
+  riskLabel: string;
+}
+
 export interface AMatrixRequest {
   /** Filter by farm; if omitted, uses all animals */
   farm?: string;

@@ -26,4 +26,7 @@ export * from './inbreedingResultRiskLevel';
 export * from './inbreedingStats';
 export * from './listAnimalsParams';
 export * from './pedigreeNode';
+export * from './recommendSiresRequest';
 export * from './riskBreakdownItem';
+export * from './sireRecommendation';
+export * from './sireRecommendationRiskLevel';

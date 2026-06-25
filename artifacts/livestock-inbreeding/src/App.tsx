@@ -10,7 +10,6 @@ import Animals from "@/pages/animals";
 import AnimalNew from "@/pages/animal-new";
 import AnimalDetail from "@/pages/animal-detail";
 import Calculate from "@/pages/calculate";
-import AMatrix from "@/pages/a-matrix";
 import HistoryPage from "@/pages/history";
 
 const queryClient = new QueryClient();
@@ -24,7 +23,6 @@ function Router() {
         <Route path="/animals/new" component={AnimalNew} />
         <Route path="/animals/:id" component={AnimalDetail} />
         <Route path="/calculate" component={Calculate} />
-        <Route path="/a-matrix" component={AMatrix} />
         <Route path="/history" component={HistoryPage} />
         <Route component={NotFound} />
       </Switch>

@@ -3,6 +3,7 @@ import { Link, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Calculator } from "lucide-react";
+import { PedigreeChart, PedigreeNode } from "@/components/ui/pedigree-chart";
 
 export default function AnimalDetail() {
   const { id } = useParams();
@@ -28,7 +29,7 @@ export default function AnimalDetail() {
         <Button asChild className="bg-primary text-primary-foreground">
           <Link href={`/calculate?sireId=${animal.sex === 'male' ? animal.id : ''}&damId=${animal.sex === 'female' ? animal.id : ''}`} className="flex items-center gap-2">
             <Calculator className="w-4 h-4" />
-            นำไปคำนวณเลือดชิด
+            จำลองการผสมพันธุ์
           </Link>
         </Button>
       </div>
@@ -89,7 +90,7 @@ export default function AnimalDetail() {
               <div className="h-32 flex items-center justify-center text-muted-foreground">กำลังสร้างผังสายเลือด...</div>
             ) : pedigree ? (
               <div className="min-w-[500px] py-4">
-                <PedigreeTree node={pedigree} depth={0} />
+                <PedigreeChart node={pedigree as PedigreeNode} />
               </div>
             ) : (
               <div className="text-muted-foreground text-center py-8">ไม่พบข้อมูลสายเลือด</div>
@@ -97,28 +98,6 @@ export default function AnimalDetail() {
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
-}
-
-// Simple recursive component for tree visualization
-function PedigreeTree({ node, depth }: { node: any; depth: number }) {
-  if (!node) return null;
-  const isMale = node.sex === 'male';
-  
-  return (
-    <div className={`flex flex-col gap-2 ${depth > 0 ? "ml-8 pl-4 border-l-2 border-border/50" : ""}`}>
-      <div className={`inline-flex flex-col p-3 rounded border shadow-sm max-w-xs ${isMale ? "bg-blue-50/50 border-blue-200" : "bg-pink-50/50 border-pink-200"}`}>
-        <div className="font-bold text-sm">{node.name}</div>
-        <div className="text-xs text-muted-foreground">{node.code}</div>
-      </div>
-      
-      {(node.sire || node.dam) && (
-        <div className="space-y-4 mt-2">
-          {node.sire ? <PedigreeTree node={node.sire} depth={depth + 1} /> : <div className="ml-8 pl-4 border-l-2 border-border/50 text-xs text-muted-foreground italic">ไม่ทราบพ่อ</div>}
-          {node.dam ? <PedigreeTree node={node.dam} depth={depth + 1} /> : <div className="ml-8 pl-4 border-l-2 border-border/50 text-xs text-muted-foreground italic">ไม่ทราบแม่</div>}
-        </div>
-      )}
     </div>
   );
 }

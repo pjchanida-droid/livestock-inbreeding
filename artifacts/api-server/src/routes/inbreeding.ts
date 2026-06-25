@@ -180,6 +180,59 @@ router.get("/inbreeding/stats", async (req, res) => {
   }
 });
 
+// POST /inbreeding/recommend-sires
+router.post("/inbreeding/recommend-sires", async (req, res) => {
+  const { damId, limit = 10 } = req.body as { damId?: number; limit?: number };
+  if (!damId || typeof damId !== "number") {
+    return res.status(400).json({ error: "กรุณาระบุ damId" });
+  }
+
+  try {
+    const allRows = await db.select().from(animalsTable);
+    const records: AnimalRecord[] = allRows.map((r) => ({
+      id: r.id, name: r.name, code: r.code, sex: r.sex,
+      farm: r.farm ?? null, sireId: r.sireId ?? null, damId: r.damId ?? null,
+    }));
+    const idMap = new Map<number, AnimalRecord>(records.map((r) => [r.id, r]));
+
+    const dam = idMap.get(damId);
+    if (!dam) return res.status(400).json({ error: "ไม่พบแม่พันธุ์ในระบบ" });
+
+    const { A, F, R } = buildAMatrix(records);
+
+    // Score every male except the dam's sire/dam (avoid obvious issues)
+    const males = records.filter((r) => r.sex === "male" && r.id !== damId);
+
+    const recommendations = males.map((sire) => {
+      const aSireDam = A.get(sire.code)?.get(dam.code) ?? 0;
+      const fOffspring = 0.5 * aSireDam;
+      const rSireDam = R.get(sire.code)?.get(dam.code) ?? 0;
+      const fSireVal = F.get(sire.code) ?? 0;
+      const { level, label } = getRiskLevel(fOffspring);
+      return {
+        sireId: sire.id,
+        sireName: sire.name,
+        sireCode: sire.code,
+        fCoefficient: fOffspring,
+        fPercent: fOffspring * 100,
+        rCoefficient: rSireDam,
+        rPercent: rSireDam * 100,
+        fSire: fSireVal,
+        riskLevel: level,
+        riskLabel: label,
+      };
+    });
+
+    // Sort by fCoefficient ascending (lowest inbreeding first), then by rCoefficient ascending
+    recommendations.sort((a, b) => a.fCoefficient - b.fCoefficient || a.rCoefficient - b.rCoefficient);
+
+    return res.json(recommendations.slice(0, Math.min(Number(limit), 20)));
+  } catch (err) {
+    req.log.error({ err }, "recommendSires failed");
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // POST /inbreeding/a-matrix
 router.post("/inbreeding/a-matrix", async (req, res) => {
   const parsed = ComputeAMatrixBody.safeParse(req.body);

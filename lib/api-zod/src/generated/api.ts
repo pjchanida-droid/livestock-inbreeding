@@ -234,6 +234,31 @@ export const GetInbreedingStatsResponse = zod.object({
 
 
 /**
+ * @summary Recommend best sires for a given dam to minimize offspring inbreeding
+ */
+export const recommendSiresBodyLimitDefault = 10;
+
+export const RecommendSiresBody = zod.object({
+  "damId": zod.number(),
+  "limit": zod.number().default(recommendSiresBodyLimitDefault)
+})
+
+export const RecommendSiresResponseItem = zod.object({
+  "sireId": zod.number(),
+  "sireName": zod.string(),
+  "sireCode": zod.string(),
+  "fCoefficient": zod.number().describe('Predicted offspring F'),
+  "fPercent": zod.number(),
+  "rCoefficient": zod.number().describe('Relationship coefficient R between this sire and the dam'),
+  "rPercent": zod.number().optional(),
+  "fSire": zod.number().optional(),
+  "riskLevel": zod.enum(['safe', 'low', 'moderate', 'high', 'very_high']),
+  "riskLabel": zod.string()
+})
+export const RecommendSiresResponse = zod.array(RecommendSiresResponseItem)
+
+
+/**
  * @summary Compute full Additive Relationship Matrix for a set of animals
  */
 export const ComputeAMatrixBody = zod.object({

@@ -1,4 +1,4 @@
-import { useListAnimals, useCalculateInbreeding } from "@workspace/api-client-react";
+import { useListAnimals, useCalculateInbreeding, useRecommendSires, useGetAnimalPedigree } from "@workspace/api-client-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -9,7 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Calculator, Dna, Info, Activity } from "lucide-react";
 import { RiskBadge } from "@/components/ui/risk-badge";
 import { useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { PedigreeChart, PedigreeNode } from "@/components/ui/pedigree-chart";
 
 const calculateSchema = z.object({
   sireId: z.string().min(1, "กรุณาเลือกพ่อพันธุ์"),
@@ -19,6 +20,7 @@ const calculateSchema = z.object({
 export default function Calculate() {
   const { data: animals } = useListAnimals();
   const calculateMutation = useCalculateInbreeding();
+  const recommendMutation = useRecommendSires();
   const [location] = useLocation();
 
   const form = useForm<z.infer<typeof calculateSchema>>({
@@ -35,6 +37,16 @@ export default function Calculate() {
     if (dId) form.setValue('damId', dId);
   }, [form]);
 
+  const damIdWatch = form.watch('damId');
+  const prevDamId = useRef(damIdWatch);
+
+  useEffect(() => {
+    if (damIdWatch && damIdWatch !== prevDamId.current) {
+      prevDamId.current = damIdWatch;
+      recommendMutation.mutate({ data: { damId: Number(damIdWatch), limit: 10 } });
+    }
+  }, [damIdWatch, recommendMutation]);
+
   const males = animals?.filter(a => a.sex === "male") || [];
   const females = animals?.filter(a => a.sex === "female") || [];
 
@@ -46,11 +58,27 @@ export default function Calculate() {
 
   const result = calculateMutation.data;
 
+  const sireIdForPedigree = result?.sireId ?? 0;
+  const damIdForPedigree = result?.damId ?? 0;
+
+  const { data: sirePedigree } = useGetAnimalPedigree(sireIdForPedigree || 0);
+  const { data: damPedigree } = useGetAnimalPedigree(damIdForPedigree || 0);
+
+  const predictedPedigree: PedigreeNode | null = result ? {
+    id: 0,
+    name: 'ลูกที่คาดการณ์',
+    code: 'EST',
+    sex: 'unknown',
+    fCoefficient: result.fCoefficient,
+    sire: sirePedigree as PedigreeNode,
+    dam: damPedigree as PedigreeNode
+  } : null;
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">คำนวณอัตราเลือดชิด</h1>
-        <p className="text-muted-foreground mt-1">ประเมินความเสี่ยงในการผสมพันธุ์เพื่อป้องกันความอ่อนแอทางพันธุกรรม</p>
+        <h1 className="text-3xl font-bold text-foreground">จำลองการจับคู่ผสม</h1>
+        <p className="text-muted-foreground mt-1">วิเคราะห์ความสัมพันธ์ทางพันธุกรรมและคาดการณ์ผลลัพธ์ก่อนผสมพันธุ์จริง</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -97,6 +125,48 @@ export default function Calculate() {
                 </Button>
               </form>
             </Form>
+
+            {damIdWatch && (
+              <div className="mt-8 pt-6 border-t border-border">
+                <h3 className="text-sm font-semibold mb-3 text-foreground">พ่อพันธุ์แนะนำ (เรียงตามค่าเลือดชิดต่ำสุด)</h3>
+                {recommendMutation.isPending ? (
+                  <div className="text-sm text-muted-foreground text-center py-6 flex flex-col items-center">
+                    <Activity className="w-5 h-5 animate-spin mb-2" />
+                    กำลังประมวลผล...
+                  </div>
+                ) : recommendMutation.data && recommendMutation.data.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-12 gap-2 text-[11px] font-semibold text-muted-foreground pb-2 border-b">
+                      <div className="col-span-2 text-center">อันดับ</div>
+                      <div className="col-span-5">รหัส / ชื่อ</div>
+                      <div className="col-span-2 text-center">F ลูก (%)</div>
+                      <div className="col-span-3 text-right pr-1">ความเสี่ยง</div>
+                    </div>
+                    {recommendMutation.data.slice(0, 8).map((rec, idx) => (
+                      <div 
+                        key={rec.sireId} 
+                        className="grid grid-cols-12 gap-2 items-center text-sm p-2 rounded-md hover:bg-muted/60 cursor-pointer transition-colors border border-transparent hover:border-border/50"
+                        onClick={() => form.setValue('sireId', rec.sireId.toString())}
+                      >
+                        <div className="col-span-2 font-mono text-center text-muted-foreground">#{idx + 1}</div>
+                        <div className="col-span-5 truncate">
+                          <div className="font-semibold">{rec.sireCode}</div>
+                          <div className="text-[10px] text-muted-foreground truncate">{rec.sireName}</div>
+                        </div>
+                        <div className="col-span-2 text-center font-medium">{(rec.fCoefficient * 100).toFixed(1)}</div>
+                        <div className="col-span-3 flex justify-end">
+                          <RiskBadge level={rec.riskLevel} label={rec.riskLabel} className="text-[10px] px-1.5 py-0 h-5" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground text-center py-6 bg-muted/20 rounded-md border border-dashed">
+                    ไม่พบพ่อพันธุ์แนะนำ
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -138,6 +208,17 @@ export default function Calculate() {
                     <div className="text-xs text-primary/70">F = {result.fCoefficient?.toFixed(4)}</div>
                   </div>
                 </div>
+
+                {predictedPedigree && (
+                  <div>
+                    <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-primary" /> แผนผังสายเลือดลูกที่คาดการณ์
+                    </h3>
+                    <div className="overflow-x-auto bg-muted/10 rounded-lg p-4 border border-border">
+                      <PedigreeChart node={predictedPedigree} />
+                    </div>
+                  </div>
+                )}
 
                 {result.commonAncestors.length > 0 && (
                   <div>

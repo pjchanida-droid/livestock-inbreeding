@@ -238,6 +238,33 @@ paths:
               schema:
                 $ref: "#/components/schemas/InbreedingStats"
 
+  /inbreeding/recommend-sires:
+    post:
+      operationId: recommendSires
+      tags: [inbreeding]
+      summary: Recommend best sires for a given dam to minimize offspring inbreeding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecommendSiresRequest"
+      responses:
+        "200":
+          description: Ranked list of recommended sires
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SireRecommendation"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /inbreeding/a-matrix:
     post:
       operationId: computeAMatrix
@@ -501,6 +528,44 @@ components:
           type: string
         count:
           type: integer
+
+    RecommendSiresRequest:
+      type: object
+      required: [damId]
+      properties:
+        damId:
+          type: integer
+        limit:
+          type: integer
+          default: 10
+
+    SireRecommendation:
+      type: object
+      required: [sireId, sireName, sireCode, fCoefficient, fPercent, riskLevel, riskLabel, rCoefficient]
+      properties:
+        sireId:
+          type: integer
+        sireName:
+          type: string
+        sireCode:
+          type: string
+        fCoefficient:
+          type: number
+          description: Predicted offspring F
+        fPercent:
+          type: number
+        rCoefficient:
+          type: number
+          description: Relationship coefficient R between this sire and the dam
+        rPercent:
+          type: number
+        fSire:
+          type: number
+        riskLevel:
+          type: string
+          enum: [safe, low, moderate, high, very_high]
+        riskLabel:
+          type: string
 
     AMatrixRequest:
       type: object
