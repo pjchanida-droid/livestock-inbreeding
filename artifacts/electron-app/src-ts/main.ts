@@ -64,11 +64,14 @@ function startApiServer(): Promise<void> {
       return;
     }
 
+    const serverDir = path.dirname(serverScript);
+
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       PORT: String(SERVER_PORT),
       DATABASE_PATH: dbPath,
       NODE_ENV: "production",
+      PINO_NO_FILE_WORKERS: "1",
     };
 
     if (fs.existsSync(frontendDir)) {
@@ -80,7 +83,10 @@ function startApiServer(): Promise<void> {
     const bundledNode = getResourcePath("node.exe");
     const nodeExec = fs.existsSync(bundledNode) ? bundledNode : process.execPath;
 
+    const stderrLines: string[] = [];
+
     serverProcess = spawn(nodeExec, [serverScript], {
+      cwd: serverDir,
       env,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -89,18 +95,24 @@ function startApiServer(): Promise<void> {
       console.log("[server]", d.toString().trim());
     });
     serverProcess.stderr?.on("data", (d: Buffer) => {
-      console.error("[server]", d.toString().trim());
+      const line = d.toString().trim();
+      console.error("[server]", line);
+      stderrLines.push(line);
     });
     serverProcess.on("error", (err) => {
       reject(new Error(`Failed to start server: ${err.message}`));
     });
     serverProcess.on("exit", (code) => {
       if (code !== 0 && code !== null) {
-        console.error(`Server exited with code ${code}`);
+        const errDetail = stderrLines.slice(-10).join("\n");
+        reject(new Error(`Server crashed (code ${code}):\n${errDetail}`));
       }
     });
 
-    waitForServer(SERVER_PORT).then(resolve).catch(reject);
+    waitForServer(SERVER_PORT).then(resolve).catch((err: Error) => {
+      const errDetail = stderrLines.slice(-10).join("\n");
+      reject(new Error(`${err.message}${errDetail ? `\n\nServer output:\n${errDetail}` : ""}`));
+    });
   });
 }
 
