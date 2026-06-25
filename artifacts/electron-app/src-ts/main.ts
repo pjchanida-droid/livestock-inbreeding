@@ -1,12 +1,19 @@
-import { app, BrowserWindow, dialog, shell, Menu } from "electron";
-import { spawn, type ChildProcess } from "child_process";
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  shell,
+  Menu,
+  utilityProcess,
+  type UtilityProcess,
+} from "electron";
 import path from "path";
 import http from "http";
 import fs from "fs";
 
 const SERVER_PORT = 18337;
 let mainWindow: BrowserWindow | null = null;
-let serverProcess: ChildProcess | null = null;
+let serverProcess: UtilityProcess | null = null;
 
 function getResourcePath(...segments: string[]): string {
   if (app.isPackaged) {
@@ -22,7 +29,7 @@ function getDbPath(): string {
   return path.join(dir, "livestock.db");
 }
 
-function waitForServer(port: number, maxAttempts = 40): Promise<void> {
+function waitForServer(port: number, maxAttempts = 60): Promise<void> {
   return new Promise((resolve, reject) => {
     let attempts = 0;
     const tryConnect = () => {
@@ -56,25 +63,28 @@ function startApiServer(): Promise<void> {
     const dbPath = getDbPath();
 
     if (!fs.existsSync(serverScript)) {
-      reject(new Error(`Server not found at: ${serverScript}\nPlease build the project first.`));
+      reject(
+        new Error(
+          `Server not found at: ${serverScript}\nPlease build the project first.`,
+        ),
+      );
       return;
     }
 
-    const env: NodeJS.ProcessEnv = {
-      ...process.env,
+    const env: Record<string, string> = {
       PORT: String(SERVER_PORT),
       DATABASE_PATH: dbPath,
       NODE_ENV: "production",
-      NODE_OPTIONS: "--experimental-sqlite",
     };
 
     if (fs.existsSync(frontendDir)) {
       env.STATIC_DIR = frontendDir;
     }
 
-    serverProcess = spawn(process.execPath, [serverScript], {
+    serverProcess = utilityProcess.fork(serverScript, [], {
+      execArgv: ["--experimental-sqlite"],
       env,
-      stdio: ["ignore", "pipe", "pipe"],
+      stdio: "pipe",
     });
 
     serverProcess.stdout?.on("data", (d: Buffer) => {
@@ -83,18 +93,13 @@ function startApiServer(): Promise<void> {
     serverProcess.stderr?.on("data", (d: Buffer) => {
       console.error("[server]", d.toString().trim());
     });
-    serverProcess.on("error", (err) => {
-      reject(new Error(`Failed to start server: ${err.message}`));
-    });
     serverProcess.on("exit", (code) => {
       if (code !== 0 && code !== null) {
         console.error(`Server exited with code ${code}`);
       }
     });
 
-    waitForServer(SERVER_PORT)
-      .then(resolve)
-      .catch(reject);
+    waitForServer(SERVER_PORT).then(resolve).catch(reject);
   });
 }
 
@@ -228,7 +233,7 @@ app.whenReady().then(async () => {
 });
 
 app.on("window-all-closed", () => {
-  serverProcess?.kill("SIGTERM");
+  serverProcess?.kill();
   serverProcess = null;
   if (process.platform !== "darwin") app.quit();
 });
@@ -238,5 +243,5 @@ app.on("activate", () => {
 });
 
 process.on("exit", () => {
-  serverProcess?.kill("SIGTERM");
+  serverProcess?.kill();
 });
