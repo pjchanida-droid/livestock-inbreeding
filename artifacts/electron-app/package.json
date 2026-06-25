@@ -34,6 +34,10 @@
         "from": "frontend",
         "to": "frontend",
         "filter": ["**/*"]
+      },
+      {
+        "from": "node.exe",
+        "to": "node.exe"
       }
     ],
     "win": {

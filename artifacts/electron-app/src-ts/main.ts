@@ -1,19 +1,12 @@
-import {
-  app,
-  BrowserWindow,
-  dialog,
-  shell,
-  Menu,
-  utilityProcess,
-  type UtilityProcess,
-} from "electron";
+import { app, BrowserWindow, dialog, shell, Menu } from "electron";
+import { spawn, type ChildProcess } from "child_process";
 import path from "path";
 import http from "http";
 import fs from "fs";
 
 const SERVER_PORT = 18337;
 let mainWindow: BrowserWindow | null = null;
-let serverProcess: UtilityProcess | null = null;
+let serverProcess: ChildProcess | null = null;
 
 function getResourcePath(...segments: string[]): string {
   if (app.isPackaged) {
@@ -71,7 +64,8 @@ function startApiServer(): Promise<void> {
       return;
     }
 
-    const env: Record<string, string> = {
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
       PORT: String(SERVER_PORT),
       DATABASE_PATH: dbPath,
       NODE_ENV: "production",
@@ -81,10 +75,14 @@ function startApiServer(): Promise<void> {
       env.STATIC_DIR = frontendDir;
     }
 
-    serverProcess = utilityProcess.fork(serverScript, [], {
-      execArgv: ["--experimental-sqlite"],
+    // Use bundled node.exe (Node.js 24 with stable sqlite support)
+    // Fall back to Electron's own Node.js if not found
+    const bundledNode = getResourcePath("node.exe");
+    const nodeExec = fs.existsSync(bundledNode) ? bundledNode : process.execPath;
+
+    serverProcess = spawn(nodeExec, [serverScript], {
       env,
-      stdio: "pipe",
+      stdio: ["ignore", "pipe", "pipe"],
     });
 
     serverProcess.stdout?.on("data", (d: Buffer) => {
@@ -92,6 +90,9 @@ function startApiServer(): Promise<void> {
     });
     serverProcess.stderr?.on("data", (d: Buffer) => {
       console.error("[server]", d.toString().trim());
+    });
+    serverProcess.on("error", (err) => {
+      reject(new Error(`Failed to start server: ${err.message}`));
     });
     serverProcess.on("exit", (code) => {
       if (code !== 0 && code !== null) {
@@ -233,7 +234,7 @@ app.whenReady().then(async () => {
 });
 
 app.on("window-all-closed", () => {
-  serverProcess?.kill();
+  serverProcess?.kill("SIGTERM");
   serverProcess = null;
   if (process.platform !== "darwin") app.quit();
 });
@@ -243,5 +244,5 @@ app.on("activate", () => {
 });
 
 process.on("exit", () => {
-  serverProcess?.kill();
+  serverProcess?.kill("SIGTERM");
 });

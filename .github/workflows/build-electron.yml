@@ -87,6 +87,17 @@ jobs:
         working-directory: artifacts/electron-app
         run: pnpm run build
 
+      - name: Bundle Node.js 24 for server runtime
+        shell: pwsh
+        run: |
+          $nodeVersion = "v24.3.0"
+          $zipUrl = "https://nodejs.org/dist/$nodeVersion/node-$nodeVersion-win-x64.zip"
+          Write-Host "Downloading Node.js $nodeVersion..."
+          Invoke-WebRequest -Uri $zipUrl -OutFile node.zip
+          Expand-Archive node.zip -DestinationPath node-temp -Force
+          Copy-Item "node-temp\node-$nodeVersion-win-x64\node.exe" "artifacts/electron-app/node.exe"
+          Write-Host "Bundled node.exe: $((Get-Item artifacts/electron-app/node.exe).Length) bytes"
+
       - name: Create icon if missing
         shell: pwsh
         run: |
