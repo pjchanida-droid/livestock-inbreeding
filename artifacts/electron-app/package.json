@@ -26,12 +26,12 @@
     },
     "extraResources": [
       {
-        "from": "../../artifacts/api-server/dist",
+        "from": "server",
         "to": "server",
         "filter": ["**/*"]
       },
       {
-        "from": "../../artifacts/livestock-inbreeding/dist",
+        "from": "frontend",
         "to": "frontend",
         "filter": ["**/*"]
       }

@@ -65,6 +65,16 @@ jobs:
         with:
           name: built-assets
 
+      - name: Copy built assets into electron-app
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "artifacts/electron-app/server" | Out-Null
+          New-Item -ItemType Directory -Force -Path "artifacts/electron-app/frontend" | Out-Null
+          Copy-Item -Path "artifacts/api-server/dist/*" -Destination "artifacts/electron-app/server/" -Recurse -Force
+          Copy-Item -Path "artifacts/livestock-inbreeding/dist/*" -Destination "artifacts/electron-app/frontend/" -Recurse -Force
+          Write-Host "Server files:" ; Get-ChildItem artifacts/electron-app/server
+          Write-Host "Frontend files:" ; Get-ChildItem artifacts/electron-app/frontend
+
       - name: Install Electron dependencies only
         working-directory: artifacts/electron-app
         run: pnpm install
