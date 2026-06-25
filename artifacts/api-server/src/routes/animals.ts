@@ -103,9 +103,9 @@ router.post("/animals/import", upload.single("file"), async (req, res) => {
     return res.status(400).json({ error: "กรุณาแนบไฟล์ Excel (.xlsx)" });
   }
   try {
-    const wb = XLSX.read(req.file.buffer, { type: "buffer" });
+    const wb = XLSX.read(req.file.buffer, { type: "buffer", cellDates: true });
     const ws = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: "" });
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "" });
 
     // Load existing animals for code-based sire/dam resolution
     const existing = await db.select().from(animalsTable);
@@ -157,8 +157,17 @@ router.post("/animals/import", upload.single("file"), async (req, res) => {
         const species = String(row["Species"] || "").trim() || "ไม่ระบุ";
         const name = String(row["Name"] || code).trim();
         const farm = String(row["Farm"] || "").trim() || null;
-        const birthDate = String(row["BirthDate"] || "").trim() || null;
         const notes = String(row["Notes"] || "").trim() || null;
+
+        // BirthDate: cellDates:true gives JS Date objects; fallback handles plain strings
+        const rawBd = row["BirthDate"];
+        let birthDate: string | null = null;
+        if (rawBd instanceof Date && !isNaN(rawBd.getTime())) {
+          birthDate = rawBd.toISOString().slice(0, 10); // "YYYY-MM-DD"
+        } else if (rawBd && String(rawBd).trim()) {
+          const parsed = new Date(String(rawBd).trim());
+          if (!isNaN(parsed.getTime())) birthDate = parsed.toISOString().slice(0, 10);
+        }
 
         try {
           const [created] = await db
