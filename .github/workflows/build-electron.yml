@@ -35,13 +35,20 @@ jobs:
       - name: Build API server
         run: pnpm --filter @workspace/api-server run build
 
-      - name: Upload built assets
+      - name: Prepare packaging folder
+        run: |
+          mkdir -p packaging/server
+          mkdir -p packaging/frontend
+          cp -r artifacts/api-server/dist/. packaging/server/
+          cp -r artifacts/livestock-inbreeding/dist/. packaging/frontend/
+          echo "=== server ===" && ls packaging/server
+          echo "=== frontend ===" && ls packaging/frontend
+
+      - name: Upload packaging folder
         uses: actions/upload-artifact@v4
         with:
           name: built-assets
-          path: |
-            artifacts/livestock-inbreeding/dist
-            artifacts/api-server/dist
+          path: packaging/
           retention-days: 1
 
   package-windows:
@@ -60,22 +67,19 @@ jobs:
         with:
           version: 10
 
-      - name: Download built assets
+      - name: Download built assets directly into electron-app
         uses: actions/download-artifact@v4
         with:
           name: built-assets
+          path: artifacts/electron-app
 
-      - name: Copy built assets into electron-app
+      - name: Verify assets
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path "artifacts/electron-app/server" | Out-Null
-          New-Item -ItemType Directory -Force -Path "artifacts/electron-app/frontend" | Out-Null
-          Copy-Item -Path "artifacts/api-server/dist/*" -Destination "artifacts/electron-app/server/" -Recurse -Force
-          Copy-Item -Path "artifacts/livestock-inbreeding/dist/*" -Destination "artifacts/electron-app/frontend/" -Recurse -Force
-          Write-Host "Server files:" ; Get-ChildItem artifacts/electron-app/server
-          Write-Host "Frontend files:" ; Get-ChildItem artifacts/electron-app/frontend
+          Write-Host "=== server ===" ; Get-ChildItem artifacts/electron-app/server
+          Write-Host "=== frontend ===" ; Get-ChildItem artifacts/electron-app/frontend
 
-      - name: Install Electron dependencies only
+      - name: Install Electron dependencies
         working-directory: artifacts/electron-app
         run: pnpm install
 
