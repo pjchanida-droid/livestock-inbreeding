@@ -123,7 +123,7 @@ export default function AnimalDetail() {
               </div>
             ) : pedigree ? (
               <div className="min-w-[500px] py-4">
-                <PedigreeChart node={pedigree as PedigreeNode} />
+                <PedigreeChart node={pedigree as PedigreeNode} animalName={animal.name} />
               </div>
             ) : (
               <div className="text-muted-foreground text-center py-8">
