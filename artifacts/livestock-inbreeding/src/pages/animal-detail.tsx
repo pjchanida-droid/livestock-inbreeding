@@ -64,9 +64,14 @@ export default function AnimalDetail() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <FieldLabel th="เพศ" en="Sex" />
-                <div className="font-medium mt-0.5">
-                  {animal.sex === 'male' ? 'ตัวผู้ / Male' : 'ตัวเมีย / Female'}
+                <FieldLabel th="สถานะ" en="Status" />
+                <div className="mt-0.5">
+                  {animal.sex === 'male'
+                    ? <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">พ่อพันธุ์ / Sire</span>
+                    : animal.sex === 'female'
+                    ? <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-pink-100 text-pink-800">แม่พันธุ์ / Dam</span>
+                    : <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">อื่นๆ / Other</span>
+                  }
                 </div>
               </div>
               <div>

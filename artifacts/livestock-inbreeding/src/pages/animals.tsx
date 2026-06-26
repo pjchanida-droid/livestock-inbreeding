@@ -298,7 +298,7 @@ export default function Animals() {
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
                 <TableHead><div className="flex flex-col leading-tight"><span>รหัส</span><span className="text-[10px] opacity-50 font-normal">Code</span></div></TableHead>
-                <TableHead><div className="flex flex-col leading-tight"><span>ชื่อสัตว์</span><span className="text-[10px] opacity-50 font-normal">Name</span></div></TableHead>
+                <TableHead><div className="flex flex-col leading-tight"><span>สถานะ</span><span className="text-[10px] opacity-50 font-normal">Status</span></div></TableHead>
                 <TableHead><div className="flex flex-col leading-tight"><span>ฟาร์ม</span><span className="text-[10px] opacity-50 font-normal">Farm</span></div></TableHead>
                 <TableHead><div className="flex flex-col leading-tight"><span>เพศ</span><span className="text-[10px] opacity-50 font-normal">Sex</span></div></TableHead>
                 <TableHead><div className="flex flex-col leading-tight"><span>สายเลือด (พ่อ/แม่)</span><span className="text-[10px] opacity-50 font-normal">Lineage (Sire/Dam)</span></div></TableHead>
@@ -329,11 +329,18 @@ export default function Animals() {
                 sortedAnimals.map((animal) => (
                   <TableRow key={animal.id} className="hover:bg-muted/30">
                     <TableCell className="font-medium">{animal.code}</TableCell>
-                    <TableCell>{animal.name}</TableCell>
+                    <TableCell>
+                      {animal.sex === 'male'
+                        ? <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">พ่อพันธุ์</span>
+                        : animal.sex === 'female'
+                        ? <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-pink-100 text-pink-800">แม่พันธุ์</span>
+                        : <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">อื่นๆ</span>
+                      }
+                    </TableCell>
                     <TableCell>{animal.farm || '-'}</TableCell>
                     <TableCell>{animal.sex === 'male' ? 'ผู้' : animal.sex === 'female' ? 'เมีย' : 'ไม่ระบุ'}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {animal.sireName || '-'} / {animal.damName || '-'}
+                      {animal.sireCode || '-'} / {animal.damCode || '-'}
                     </TableCell>
                     <TableCell>
                       {animal.fCoefficient !== null && animal.fCoefficient !== undefined 

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect, useCallback } from "react";
+import { useRef, useCallback } from "react";
 import { Button } from "./button";
 import { Download } from "lucide-react";
 
@@ -13,139 +13,77 @@ export interface PedigreeNode {
 }
 
 // ─── Layout constants ───────────────────────────────────────────────
-const LEAF_W  = 138;
-const LEAVES  = 8;
-const MAX_GEN = 3;
-const ROW_H   = 120;
-const V_PAD   = 30;
-const RECT_W  = 116;
-const RECT_H  = 56;
-const EL_RX   = 58;
-const EL_RY   = 28;
-const HALF_H  = 28;
-const SVG_W   = LEAVES * LEAF_W;
-const SVG_H   = MAX_GEN * ROW_H + RECT_H + V_PAD * 2;
+const BOX_W  = 140;
+const BOX_H  = 60;
+const HALF_H = BOX_H / 2;
+const GAP_H  = 100;  // vertical gap between rows
+const PAD    = 20;
 
-const getCx = (s: number, e: number) => ((s + e) / 2) * LEAF_W;
-const getCy = (d: number) => (MAX_GEN - d) * ROW_H + V_PAD + HALF_H;
+// 3 boxes: [dam | subject | sire]  each BOX_W wide + gaps
+const COL_DAM  = PAD;
+const COL_SUB  = PAD + BOX_W + 60;
+const COL_SIRE = PAD + (BOX_W + 60) * 2;
 
-// ─── Types ─────────────────────────────────────────────────────────
-interface PlacedNode {
-  key: string;
-  kind: "normal" | "unknown" | "hidden";
-  node: PedigreeNode | null;
-  cx: number;
-  cy: number;
+const ROW_PARENT  = PAD;
+const ROW_SUBJECT = PAD + BOX_H + GAP_H;
+
+const SVG_W = COL_SIRE + BOX_W + PAD;
+const SVG_H = ROW_SUBJECT + BOX_H + PAD;
+
+// ─── Colour helpers ─────────────────────────────────────────────────
+function nodeColors(sex: string) {
+  if (sex === "male")   return { fill: "#dbeafe", stroke: "#3b82f6" };
+  if (sex === "female") return { fill: "#fce7f3", stroke: "#ec4899" };
+  return { fill: "#f3f4f6", stroke: "#9ca3af" };
 }
 
-interface Connector {
-  fromCx: number;
-  fromCy: number;
-  toCx: number;
-  toCy: number;
-  isDuplicate?: boolean;
+// ─── Single node renderer ─────────────────────────────────────────────
+interface NodeProps {
+  x: number;
+  y: number;
+  code: string;
+  sex: string;
+  role: string;
+  fCoefficient?: number | null;
+  isSubject?: boolean;
 }
 
-// ─── Layout builder ─────────────────────────────────────────────────
-function buildLayout(root: PedigreeNode) {
-  const nodes: PlacedNode[] = [];
-  const connectors: Connector[] = [];
-  const canonMap = new Map<number, { cx: number; cy: number }>();
-  let k = 0;
+function NodeBox({ x, y, code, sex, role, fCoefficient, isSubject }: NodeProps) {
+  const { fill, stroke } = nodeColors(sex);
+  const isFemale = sex === "female";
+  const cx = x + BOX_W / 2;
+  const cy = y + HALF_H;
+  const F  = fCoefficient ?? 0;
 
-  function traverse(
-    node: PedigreeNode | undefined,
-    depth: number,
-    slotStart: number,
-    slotEnd: number,
-    childCx: number | null,
-    childCy: number | null,
-  ) {
-    const cx = getCx(slotStart, slotEnd);
-    const cy = getCy(depth);
-    const slotMid = (slotStart + slotEnd) / 2;
-
-    if (!node) {
-      if (childCx !== null)
-        connectors.push({ fromCx: cx, fromCy: cy, toCx: childCx, toCy: childCy! });
-      nodes.push({ key: `unk-${k++}`, kind: "unknown", node: null, cx, cy });
-      return;
-    }
-
-    if (node.id > 0 && canonMap.has(node.id)) {
-      const canon = canonMap.get(node.id)!;
-      nodes.push({ key: `dup-${node.id}-${k++}`, kind: "hidden", node, cx, cy });
-      if (childCx !== null)
-        connectors.push({ fromCx: canon.cx, fromCy: canon.cy, toCx: childCx, toCy: childCy!, isDuplicate: true });
-      return;
-    }
-
-    if (node.id > 0) canonMap.set(node.id, { cx, cy });
-    if (childCx !== null)
-      connectors.push({ fromCx: cx, fromCy: cy, toCx: childCx, toCy: childCy! });
-    nodes.push({ key: `n-${node.id}-${k++}`, kind: "normal", node, cx, cy });
-
-    if (depth < MAX_GEN) {
-      traverse(node.dam,  depth + 1, slotStart, slotMid, cx, cy);
-      traverse(node.sire, depth + 1, slotMid,  slotEnd,  cx, cy);
-    }
-  }
-
-  traverse(root, 0, 0, LEAVES, null, null);
-  return { nodes, connectors };
-}
-
-// ─── Node SVG element ─────────────────────────────────────────────────
-// Female = ellipse (pink), Male = rectangle (blue), Unknown = dashed rect
-function NodeSvg({ p }: { p: PlacedNode }) {
-  if (p.kind === "hidden") return null;
-
-  const { cx, cy, kind, node } = p;
-  const isFemale = node?.sex === "female";
-  const F = node?.fCoefficient ?? 0;
-  const hasF = F > 0;
-
-  const nameY = hasF ? cy - 12 : cy - 6;
-  const codeY = hasF ? cy + 4  : cy + 10;
-  const fY    = cy + 20;
-
-  if (kind === "unknown") {
-    return (
-      <g>
-        <rect
-          x={cx - RECT_W / 2} y={cy - HALF_H}
-          width={RECT_W} height={RECT_H} rx={4}
-          fill="#f9fafb" stroke="#9ca3af" strokeWidth={1.5} strokeDasharray="5 4"
-        />
-        <text x={cx} y={cy + 5} textAnchor="middle" fontSize={12} fill="#9ca3af"
-          fontFamily="Sarabun, sans-serif">ไม่ทราบ</text>
-      </g>
-    );
-  }
-
-  const rawName = node!.name;
-  const name = rawName.length > 13 ? rawName.slice(0, 12) + "…" : rawName;
-
-  const fill   = isFemale ? "#fce7f3" : "#dbeafe";
-  const stroke = isFemale ? "#ec4899" : "#3b82f6";
+  const roleY  = cy - (F > 0 ? 14 : 8);
+  const codeY  = cy + (F > 0 ? 2  : 8);
+  const fY     = cy + 18;
 
   return (
     <g>
       {isFemale ? (
-        <ellipse cx={cx} cy={cy} rx={EL_RX} ry={EL_RY}
-          fill={fill} stroke={stroke} strokeWidth={2} />
+        <ellipse cx={cx} cy={cy} rx={BOX_W / 2} ry={HALF_H}
+          fill={fill} stroke={stroke}
+          strokeWidth={isSubject ? 2.5 : 2}
+          strokeDasharray={isSubject ? undefined : undefined}
+        />
       ) : (
-        <rect
-          x={cx - RECT_W / 2} y={cy - HALF_H}
-          width={RECT_W} height={RECT_H} rx={4}
-          fill={fill} stroke={stroke} strokeWidth={2}
+        <rect x={x} y={y} width={BOX_W} height={BOX_H} rx={5}
+          fill={fill} stroke={stroke}
+          strokeWidth={isSubject ? 2.5 : 2}
         />
       )}
-      <text x={cx} y={nameY} textAnchor="middle" fontSize={12} fontWeight={700}
-        fill="#111827" fontFamily="Sarabun, sans-serif">{name}</text>
-      <text x={cx} y={codeY} textAnchor="middle" fontSize={10} fill="#6b7280"
-        fontFamily="Sarabun, sans-serif">{node!.code}</text>
-      {hasF && (
+
+      {/* Role label (เล็ก) */}
+      <text x={cx} y={roleY} textAnchor="middle" fontSize={10}
+        fill="#6b7280" fontFamily="Sarabun, sans-serif">{role}</text>
+
+      {/* Code (ใหญ่, เข้ม) */}
+      <text x={cx} y={codeY} textAnchor="middle" fontSize={13} fontWeight={700}
+        fill="#111827" fontFamily="Sarabun, sans-serif">{code}</text>
+
+      {/* F coefficient */}
+      {F > 0 && (
         <text x={cx} y={fY} textAnchor="middle" fontSize={10} fontWeight={600}
           fill="#374151" fontFamily="Sarabun, sans-serif">
           F: {(F * 100).toFixed(2)}%
@@ -155,35 +93,23 @@ function NodeSvg({ p }: { p: PlacedNode }) {
   );
 }
 
-// ─── Legend ───────────────────────────────────────────────────────────
-function Legend() {
+// ─── Unknown parent box ───────────────────────────────────────────────
+function UnknownBox({ x, y, role }: { x: number; y: number; role: string }) {
   return (
-    <g transform={`translate(8, ${SVG_H - 28})`}>
-      <rect x={0} y={1} width={14} height={14} rx={2}
-        fill="#dbeafe" stroke="#3b82f6" strokeWidth={1.5} />
-      <text x={18} y={12} fontSize={10} fill="#374151" fontFamily="Sarabun, sans-serif">เพศผู้ (สี่เหลี่ยม)</text>
-      <ellipse cx={107} cy={8} rx={18} ry={10}
-        fill="#fce7f3" stroke="#ec4899" strokeWidth={1.5} />
-      <text x={130} y={12} fontSize={10} fill="#374151" fontFamily="Sarabun, sans-serif">เพศเมีย (วงรี)</text>
-      <line x1={230} y1={8} x2={250} y2={8}
-        stroke="#f87171" strokeWidth={2} strokeDasharray="6 3" />
-      <text x={254} y={12} fontSize={10} fill="#374151" fontFamily="Sarabun, sans-serif">บรรพบุรุษซ้ำ</text>
+    <g>
+      <rect x={x} y={y} width={BOX_W} height={BOX_H} rx={5}
+        fill="#f9fafb" stroke="#9ca3af" strokeWidth={1.5} strokeDasharray="5 4" />
+      <text x={x + BOX_W / 2} y={y + HALF_H - 6} textAnchor="middle"
+        fontSize={10} fill="#9ca3af" fontFamily="Sarabun, sans-serif">{role}</text>
+      <text x={x + BOX_W / 2} y={y + HALF_H + 10} textAnchor="middle"
+        fontSize={11} fill="#9ca3af" fontFamily="Sarabun, sans-serif">ไม่ทราบ</text>
     </g>
   );
 }
 
 // ─── Main export ──────────────────────────────────────────────────────
 export function PedigreeChart({ node, animalName }: { node: PedigreeNode; animalName?: string }) {
-  const { nodes, connectors } = useMemo(() => buildLayout(node), [node]);
-  const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const subjectCx = getCx(0, LEAVES);
-    el.scrollLeft = subjectCx - el.clientWidth / 2;
-  }, [node]);
 
   const downloadJpg = useCallback(() => {
     const svgEl = svgRef.current;
@@ -198,9 +124,9 @@ export function PedigreeChart({ node, animalName }: { node: PedigreeNode; animal
 
     const svgData = new XMLSerializer().serializeToString(svgClone);
     const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-    const svgUrl = URL.createObjectURL(svgBlob);
+    const svgUrl  = URL.createObjectURL(svgBlob);
 
-    const scale = 2;
+    const scale  = 2;
     const canvas = document.createElement("canvas");
     canvas.width  = SVG_W * scale;
     canvas.height = SVG_H * scale;
@@ -222,6 +148,18 @@ export function PedigreeChart({ node, animalName }: { node: PedigreeNode; animal
     img.src = svgUrl;
   }, [animalName]);
 
+  // Subject bottom-center
+  const subCx = COL_SUB + BOX_W / 2;
+  const subTopY = ROW_SUBJECT;
+
+  // Dam (left)
+  const damCx = COL_DAM + BOX_W / 2;
+  const damBotY = ROW_PARENT + BOX_H;
+
+  // Sire (right)
+  const sireCx = COL_SIRE + BOX_W / 2;
+  const sireBotY = ROW_PARENT + BOX_H;
+
   return (
     <div className="space-y-2">
       <div className="flex justify-end">
@@ -231,7 +169,7 @@ export function PedigreeChart({ node, animalName }: { node: PedigreeNode; animal
         </Button>
       </div>
 
-      <div ref={containerRef} className="overflow-x-auto pb-2 rounded-md border bg-white">
+      <div className="overflow-x-auto rounded-md border bg-white">
         <svg
           ref={svgRef}
           width={SVG_W}
@@ -239,22 +177,69 @@ export function PedigreeChart({ node, animalName }: { node: PedigreeNode; animal
           viewBox={`0 0 ${SVG_W} ${SVG_H}`}
           xmlns="http://www.w3.org/2000/svg"
         >
-          {/* Diagonal straight lines from parent bottom-center to child top-center */}
-          {connectors.map((c, i) => (
+          {/* Lines: diagonal from parent bottom-center to subject top-center */}
+          {node.dam && (
             <line
-              key={i}
-              x1={c.fromCx} y1={c.fromCy + HALF_H}
-              x2={c.toCx}   y2={c.toCy   - HALF_H}
-              stroke={c.isDuplicate ? "#f87171" : "#94a3b8"}
-              strokeWidth={c.isDuplicate ? 2 : 1.5}
-              strokeDasharray={c.isDuplicate ? "6 3" : undefined}
+              x1={damCx}  y1={damBotY}
+              x2={subCx}  y2={subTopY}
+              stroke="#94a3b8" strokeWidth={1.5}
             />
-          ))}
+          )}
+          {node.sire && (
+            <line
+              x1={sireCx} y1={sireBotY}
+              x2={subCx}  y2={subTopY}
+              stroke="#94a3b8" strokeWidth={1.5}
+            />
+          )}
 
-          {/* Node shapes */}
-          {nodes.map((p) => <NodeSvg key={p.key} p={p} />)}
+          {/* Dam (left) */}
+          {node.dam ? (
+            <NodeBox
+              x={COL_DAM} y={ROW_PARENT}
+              code={node.dam.code}
+              sex={node.dam.sex}
+              role="แม่พันธุ์"
+              fCoefficient={node.dam.fCoefficient}
+            />
+          ) : (
+            <UnknownBox x={COL_DAM} y={ROW_PARENT} role="แม่พันธุ์" />
+          )}
 
-          <Legend />
+          {/* Sire (right) */}
+          {node.sire ? (
+            <NodeBox
+              x={COL_SIRE} y={ROW_PARENT}
+              code={node.sire.code}
+              sex={node.sire.sex}
+              role="พ่อพันธุ์"
+              fCoefficient={node.sire.fCoefficient}
+            />
+          ) : (
+            <UnknownBox x={COL_SIRE} y={ROW_PARENT} role="พ่อพันธุ์" />
+          )}
+
+          {/* Subject (bottom center) */}
+          <NodeBox
+            x={COL_SUB} y={ROW_SUBJECT}
+            code={node.code}
+            sex={node.sex}
+            role={node.sex === "male" ? "พ่อพันธุ์" : node.sex === "female" ? "แม่พันธุ์" : "สัตว์"}
+            fCoefficient={node.fCoefficient}
+            isSubject
+          />
+
+          {/* Legend */}
+          <g transform={`translate(${PAD}, ${SVG_H - 22})`}>
+            <rect x={0} y={0} width={12} height={12} rx={2}
+              fill="#dbeafe" stroke="#3b82f6" strokeWidth={1.5} />
+            <text x={16} y={10} fontSize={10} fill="#374151"
+              fontFamily="Sarabun, sans-serif">พ่อพันธุ์ (สี่เหลี่ยม)</text>
+            <ellipse cx={116} cy={6} rx={16} ry={8}
+              fill="#fce7f3" stroke="#ec4899" strokeWidth={1.5} />
+            <text x={136} y={10} fontSize={10} fill="#374151"
+              fontFamily="Sarabun, sans-serif">แม่พันธุ์ (วงรี)</text>
+          </g>
         </svg>
       </div>
     </div>
