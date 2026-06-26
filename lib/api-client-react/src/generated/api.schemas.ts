@@ -36,7 +36,11 @@ export interface Animal {
   /** @nullable */
   sireName?: string | null;
   /** @nullable */
+  sireCode?: string | null;
+  /** @nullable */
   damName?: string | null;
+  /** @nullable */
+  damCode?: string | null;
   /**
      * Animal's own inbreeding coefficient
      * @nullable

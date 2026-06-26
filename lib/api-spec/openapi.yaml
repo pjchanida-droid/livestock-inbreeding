@@ -320,7 +320,11 @@ components:
           type: ["integer", "null"]
         sireName:
           type: ["string", "null"]
+        sireCode:
+          type: ["string", "null"]
         damName:
+          type: ["string", "null"]
+        damCode:
           type: ["string", "null"]
         fCoefficient:
           type: ["number", "null"]

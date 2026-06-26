@@ -47,7 +47,9 @@ async function loadAnimals(farm?: string | null) {
     sireId: a.sireId ?? null,
     damId: a.damId ?? null,
     sireName: a.sireId ? (idMap.get(a.sireId)?.name ?? null) : null,
+    sireCode: a.sireId ? (idMap.get(a.sireId)?.code ?? null) : null,
     damName: a.damId ? (idMap.get(a.damId)?.name ?? null) : null,
+    damCode: a.damId ? (idMap.get(a.damId)?.code ?? null) : null,
     fCoefficient: F.get(a.code) ?? null,
     createdAt: a.createdAt,
   }));
@@ -234,7 +236,9 @@ router.post("/animals", async (req, res) => {
       sireId: created.sireId ?? null,
       damId: created.damId ?? null,
       sireName: created.sireId ? (idMap.get(created.sireId)?.name ?? null) : null,
+      sireCode: created.sireId ? (idMap.get(created.sireId)?.code ?? null) : null,
       damName: created.damId ? (idMap.get(created.damId)?.name ?? null) : null,
+      damCode: created.damId ? (idMap.get(created.damId)?.code ?? null) : null,
       fCoefficient: F.get(created.code) ?? null,
       createdAt: created.createdAt,
     });
@@ -275,7 +279,9 @@ router.get("/animals/:id", async (req, res) => {
       sireId: animal.sireId ?? null,
       damId: animal.damId ?? null,
       sireName: animal.sireId ? (idMap.get(animal.sireId)?.name ?? null) : null,
+      sireCode: animal.sireId ? (idMap.get(animal.sireId)?.code ?? null) : null,
       damName: animal.damId ? (idMap.get(animal.damId)?.name ?? null) : null,
+      damCode: animal.damId ? (idMap.get(animal.damId)?.code ?? null) : null,
       fCoefficient: F.get(animal.code) ?? null,
       createdAt: animal.createdAt,
     });
@@ -333,7 +339,9 @@ router.patch("/animals/:id", async (req, res) => {
       sireId: updated.sireId ?? null,
       damId: updated.damId ?? null,
       sireName: updated.sireId ? (idMap.get(updated.sireId)?.name ?? null) : null,
+      sireCode: updated.sireId ? (idMap.get(updated.sireId)?.code ?? null) : null,
       damName: updated.damId ? (idMap.get(updated.damId)?.name ?? null) : null,
+      damCode: updated.damId ? (idMap.get(updated.damId)?.code ?? null) : null,
       fCoefficient: F.get(updated.code) ?? null,
       createdAt: updated.createdAt,
     });

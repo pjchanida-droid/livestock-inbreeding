@@ -92,11 +92,11 @@ export default function AnimalDetail() {
             </div>
             <div>
               <FieldLabel th="พ่อพันธุ์" en="Sire" />
-              <div className="font-medium mt-0.5">{animal.sireName || '—'}</div>
+              <div className="font-medium mt-0.5">{animal.sireCode || '—'}</div>
             </div>
             <div>
               <FieldLabel th="แม่พันธุ์" en="Dam" />
-              <div className="font-medium mt-0.5">{animal.damName || '—'}</div>
+              <div className="font-medium mt-0.5">{animal.damCode || '—'}</div>
             </div>
             {animal.notes && (
               <div>

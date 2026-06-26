@@ -35,7 +35,9 @@ export const ListAnimalsResponseItem = zod.object({
   "sireId": zod.number().nullish(),
   "damId": zod.number().nullish(),
   "sireName": zod.string().nullish(),
+  "sireCode": zod.string().nullish(),
   "damName": zod.string().nullish(),
+  "damCode": zod.string().nullish(),
   "fCoefficient": zod.number().nullish().describe('Animal\'s own inbreeding coefficient'),
   "createdAt": zod.string()
 })
@@ -89,7 +91,9 @@ export const GetAnimalResponse = zod.object({
   "sireId": zod.number().nullish(),
   "damId": zod.number().nullish(),
   "sireName": zod.string().nullish(),
+  "sireCode": zod.string().nullish(),
   "damName": zod.string().nullish(),
+  "damCode": zod.string().nullish(),
   "fCoefficient": zod.number().nullish().describe('Animal\'s own inbreeding coefficient'),
   "createdAt": zod.string()
 })
@@ -129,7 +133,9 @@ export const UpdateAnimalResponse = zod.object({
   "sireId": zod.number().nullish(),
   "damId": zod.number().nullish(),
   "sireName": zod.string().nullish(),
+  "sireCode": zod.string().nullish(),
   "damName": zod.string().nullish(),
+  "damCode": zod.string().nullish(),
   "fCoefficient": zod.number().nullish().describe('Animal\'s own inbreeding coefficient'),
   "createdAt": zod.string()
 })
