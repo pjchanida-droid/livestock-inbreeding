@@ -86,7 +86,7 @@ router.get("/animals/farms", async (req, res) => {
 router.get("/animals/template", (_req, res) => {
   const wb = XLSX.utils.book_new();
   const data = [
-    ["Farm", "Animal_ID", "Sire_ID", "Dam_ID", "Sex", "Species", "Name"],
+    ["Farm", "Animal_ID", "Sire_ID", "Dam_ID", "Sex", "Species", "สถานะ"],
     ["ฟาร์มวิจัย A", "M01", "Unknown", "Unknown", "M", "โคนม", "พ่อพันธุ์"],
     ["ฟาร์มวิจัย A", "F01", "Unknown", "Unknown", "F", "โคนม", "แม่พันธุ์"],
     ["ฟาร์มวิจัย A", "C01", "M01", "F01", "M", "โคนม", "ลูกผสม"],

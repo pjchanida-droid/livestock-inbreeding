@@ -301,7 +301,7 @@ export default function Animals() {
                 <TableHead><div className="flex flex-col leading-tight"><span>สถานะ</span><span className="text-[10px] opacity-50 font-normal">Status</span></div></TableHead>
                 <TableHead><div className="flex flex-col leading-tight"><span>ฟาร์ม</span><span className="text-[10px] opacity-50 font-normal">Farm</span></div></TableHead>
                 <TableHead><div className="flex flex-col leading-tight"><span>เพศ</span><span className="text-[10px] opacity-50 font-normal">Sex</span></div></TableHead>
-                <TableHead><div className="flex flex-col leading-tight"><span>สายเลือด (พ่อ/แม่)</span><span className="text-[10px] opacity-50 font-normal">Lineage (Sire/Dam)</span></div></TableHead>
+                <TableHead><div className="flex flex-col leading-tight"><span>พ่อ/แม่</span><span className="text-[10px] opacity-50 font-normal">Sire/Dam</span></div></TableHead>
                 <TableHead><div className="flex flex-col leading-tight"><span>อัตราเลือดชิด (%)</span><span className="text-[10px] opacity-50 font-normal">Inbreeding Coeff.</span></div></TableHead>
                 <TableHead className="text-right"><div className="flex flex-col items-end leading-tight"><span>จัดการ</span><span className="text-[10px] opacity-50 font-normal">Actions</span></div></TableHead>
               </TableRow>
