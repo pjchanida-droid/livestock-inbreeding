@@ -86,7 +86,7 @@ router.get("/animals/farms", async (req, res) => {
 router.get("/animals/template", (_req, res) => {
   const wb = XLSX.utils.book_new();
   const data = [
-    ["Farm", "Animal_ID", "Sire_ID", "Dam_ID", "Sex", "Species", "สถานะ"],
+    ["Farm", "Animal_ID", "Sire_ID", "Dam_ID", "Sex", "Species", "Status"],
     ["ฟาร์มวิจัย A", "M01", "Unknown", "Unknown", "M", "โคนม", "พ่อพันธุ์"],
     ["ฟาร์มวิจัย A", "F01", "Unknown", "Unknown", "F", "โคนม", "แม่พันธุ์"],
     ["ฟาร์มวิจัย A", "C01", "M01", "F01", "M", "โคนม", "ลูกผสม"],
@@ -157,7 +157,7 @@ router.post("/animals/import", upload.single("file"), async (req, res) => {
         }
 
         const species = String(row["Species"] || "").trim() || "ไม่ระบุ";
-        const name = String(row["Name"] || code).trim();
+        const name = String(row["Status"] || row["Name"] || code).trim();
         const farm = String(row["Farm"] || "").trim() || null;
 
         try {
