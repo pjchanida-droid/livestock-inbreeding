@@ -35,6 +35,20 @@ jobs:
       - name: Build API server
         run: pnpm --filter @workspace/api-server run build
 
+      - name: Clear database before packaging
+        run: |
+          node --experimental-sqlite -e "
+          const { DatabaseSync } = require('node:sqlite');
+          const db = new DatabaseSync('artifacts/api-server/data/livestock.db');
+          db.exec('DELETE FROM inbreeding_history');
+          db.exec('DELETE FROM animals');
+          db.exec(\"UPDATE sqlite_sequence SET seq=0 WHERE name='animals' OR name='inbreeding_history'\");
+          const a = db.prepare('SELECT COUNT(*) as c FROM animals').get();
+          const h = db.prepare('SELECT COUNT(*) as c FROM inbreeding_history').get();
+          console.log('DB cleared — animals:', a.c, 'history:', h.c);
+          db.close();
+          " 2>&1 | grep -v ExperimentalWarning || true
+
       - name: Prepare packaging folder
         run: |
           mkdir -p packaging/server
