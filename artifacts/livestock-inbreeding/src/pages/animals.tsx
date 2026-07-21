@@ -130,7 +130,13 @@ export default function Animals() {
     const ws = XLSX.utils.json_to_sheet(wsData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Animals");
-    XLSX.writeFile(wb, "animals_export.xlsx");
+    const farmLabel = selectedFarm === "all" ? "ทุกฟาร์ม" : selectedFarm;
+    const safeFileName = `animals_${selectedFarm === "all" ? "all" : selectedFarm.replace(/[^a-zA-Zก-๙0-9_-]/g, "_")}_export.xlsx`;
+    toast({
+      title: `Export สำเร็จ (${sortedAnimals.length} รายการ)`,
+      description: `ฟาร์ม: ${farmLabel}`,
+    });
+    XLSX.writeFile(wb, safeFileName);
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
