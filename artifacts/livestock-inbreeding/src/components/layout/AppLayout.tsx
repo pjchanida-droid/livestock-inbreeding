@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Dna, LayoutDashboard, Heart, History, PawPrint } from "lucide-react";
+import { Dna, LayoutDashboard, Heart, History, PawPrint, Info } from "lucide-react";
 import { ReactNode } from "react";
 
 export function AppLayout({ children }: { children: ReactNode }) {
@@ -10,6 +10,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     { href: "/animals",   label: "ข้อมูลสัตว์",           sub: "Animal Registry",      icon: PawPrint },
     { href: "/calculate", label: "จำลองการจับคู่ผสม",     sub: "Mating Simulation",    icon: Heart },
     { href: "/history",   label: "ประวัติการคำนวณ",       sub: "Calculation History",  icon: History },
+    { href: "/about",     label: "เกี่ยวกับโปรแกรม",      sub: "About",                icon: Info },
   ];
 
   return (
