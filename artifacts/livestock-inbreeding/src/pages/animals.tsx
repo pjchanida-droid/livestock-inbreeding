@@ -123,8 +123,8 @@ export default function Animals() {
       "ชื่อสัตว์": a.name,
       "ฟาร์ม": a.farm || "",
       "เพศ": a.sex === "male" ? "ผู้" : a.sex === "female" ? "เมีย" : "ไม่ระบุ",
-      "พ่อพันธุ์": a.sireName || "",
-      "แม่พันธุ์": a.damName || "",
+      "พ่อพันธุ์ (ID)": a.sireCode || "",
+      "แม่พันธุ์ (ID)": a.damCode || "",
       "อัตราเลือดชิด(%)": a.fCoefficient ? (a.fCoefficient * 100).toFixed(2) : ""
     }));
     const ws = XLSX.utils.json_to_sheet(wsData);
