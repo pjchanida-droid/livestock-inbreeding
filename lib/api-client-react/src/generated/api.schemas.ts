@@ -259,3 +259,7 @@ export type ListAnimalsParams = {
 farm?: string;
 };
 
+export type DeleteAnimalsByFarm200 = {
+  deleted: number;
+};
+

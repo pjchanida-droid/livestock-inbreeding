@@ -25,6 +25,7 @@ import type {
   Animal,
   AnimalInput,
   AnimalUpdate,
+  DeleteAnimalsByFarm200,
   ErrorResponse,
   HealthStatus,
   InbreedingHistory,
@@ -357,6 +358,76 @@ export function useListFarms<TData = Awaited<ReturnType<typeof listFarms>>, TErr
 
 
 
+
+export const getDeleteAnimalsByFarmUrl = (farmName: string,) => {
+
+
+
+
+  return `/api/animals/farm/${farmName}`
+}
+
+/**
+ * @summary Delete all animals belonging to a specific farm
+ */
+export const deleteAnimalsByFarm = async (farmName: string, options?: RequestInit): Promise<DeleteAnimalsByFarm200> => {
+
+  return customFetch<DeleteAnimalsByFarm200>(getDeleteAnimalsByFarmUrl(farmName),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAnimalsByFarmMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAnimalsByFarm>>, TError,{farmName: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAnimalsByFarm>>, TError,{farmName: string}, TContext> => {
+
+const mutationKey = ['deleteAnimalsByFarm'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAnimalsByFarm>>, {farmName: string}> = (props) => {
+          const {farmName} = props ?? {};
+
+          return  deleteAnimalsByFarm(farmName,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAnimalsByFarmMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAnimalsByFarm>>>
+
+    export type DeleteAnimalsByFarmMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Delete all animals belonging to a specific farm
+ */
+export const useDeleteAnimalsByFarm = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAnimalsByFarm>>, TError,{farmName: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAnimalsByFarm>>,
+        TError,
+        {farmName: string},
+        TContext
+      > => {
+      return useMutation(getDeleteAnimalsByFarmMutationOptions(options));
+    }
 
 export const getGetAnimalUrl = (id: number,) => {
 

@@ -82,6 +82,22 @@ router.get("/animals/farms", async (req, res) => {
   }
 });
 
+// DELETE /animals/farm/:farmName — delete all animals in a farm
+router.delete("/animals/farm/:farmName", async (req, res) => {
+  const farmName = req.params.farmName?.trim();
+  if (!farmName) return res.status(400).json({ error: "กรุณาระบุชื่อฟาร์ม" });
+  try {
+    const deleted = await db
+      .delete(animalsTable)
+      .where(eq(animalsTable.farm, farmName))
+      .returning();
+    return res.json({ deleted: deleted.length });
+  } catch (err) {
+    req.log.error({ err }, "deleteAnimalsByFarm failed");
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /animals/template — Excel template download (no codegen, raw binary)
 router.get("/animals/template", (_req, res) => {
   const wb = XLSX.utils.book_new();

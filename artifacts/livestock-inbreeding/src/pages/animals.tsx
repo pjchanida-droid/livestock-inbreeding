@@ -1,4 +1,4 @@
-import { useListAnimals, useListFarms, getListAnimalsQueryKey, Animal } from "@workspace/api-client-react";
+import { useListAnimals, useListFarms, getListAnimalsQueryKey, getListFarmsQueryKey, useDeleteAnimalsByFarm, Animal } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,6 +39,7 @@ export default function Animals() {
   
   const [editingAnimal, setEditingAnimal] = useState<Animal | null>(null);
   const [deletingAnimal, setDeletingAnimal] = useState<Animal | null>(null);
+  const [deletingFarm, setDeletingFarm] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -101,6 +102,24 @@ export default function Animals() {
     } catch (error: any) {
       toast({ title: "เกิดข้อผิดพลาด", description: error.message, variant: "destructive" });
     }
+  };
+
+  const deleteFarm = useDeleteAnimalsByFarm();
+  const handleDeleteFarmConfirm = async () => {
+    if (!deletingFarm) return;
+    deleteFarm.mutate({ farmName: deletingFarm }, {
+      onSuccess: (data) => {
+        toast({ title: `ลบฟาร์มสำเร็จ`, description: `ลบสัตว์ออก ${data.deleted} รายการจากฟาร์ม "${deletingFarm}"` });
+        queryClient.invalidateQueries({ queryKey: getListAnimalsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListFarmsQueryKey() });
+        setSelectedFarm("all");
+        setDeletingFarm(null);
+      },
+      onError: () => {
+        toast({ title: "เกิดข้อผิดพลาด", description: "ไม่สามารถลบข้อมูลฟาร์มได้", variant: "destructive" });
+        setDeletingFarm(null);
+      }
+    });
   };
 
   const filteredAnimals = animals?.filter(a => 
@@ -297,6 +316,21 @@ export default function Animals() {
                 ))}
               </SelectContent>
             </Select>
+            {selectedFarm !== "all" && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setDeletingFarm(selectedFarm)}
+                className="flex items-center gap-1.5"
+                title={`ลบสัตว์ทั้งหมดในฟาร์ม "${selectedFarm}"`}
+              >
+                <Trash2 className="w-4 h-4" />
+                <div className="flex flex-col items-start leading-tight">
+                  <span>ลบฟาร์มนี้</span>
+                  <span className="text-[9px] opacity-70">Delete Farm</span>
+                </div>
+              </Button>
+            )}
           </div>
         </div>
         <CardContent className="p-0">
@@ -447,6 +481,34 @@ export default function Animals() {
               <div className="flex flex-col items-center leading-tight">
                 <span>ลบข้อมูล</span>
                 <span className="text-[9px] opacity-70">Delete</span>
+              </div>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Farm confirmation */}
+      <AlertDialog open={!!deletingFarm} onOpenChange={(open) => { if (!open) setDeletingFarm(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>ลบข้อมูลฟาร์ม "{deletingFarm}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              สัตว์ทุกตัวในฟาร์ม <strong>"{deletingFarm}"</strong> จะถูกลบออกจากระบบทั้งหมด
+              <span className="block mt-1 text-destructive font-medium">การกระทำนี้ไม่สามารถย้อนกลับได้</span>
+              <span className="block text-[11px] mt-0.5">All animals in farm "{deletingFarm}" will be permanently deleted. This cannot be undone.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              <div className="flex flex-col items-center leading-tight">
+                <span>ยกเลิก</span>
+                <span className="text-[9px] opacity-50">Cancel</span>
+              </div>
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteFarmConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              <div className="flex flex-col items-center leading-tight">
+                <span>ลบฟาร์มนี้</span>
+                <span className="text-[9px] opacity-70">Delete Farm</span>
               </div>
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -87,6 +87,41 @@ paths:
                 items:
                   type: string
 
+  /animals/farm/{farmName}:
+    delete:
+      operationId: deleteAnimalsByFarm
+      tags: [animals]
+      summary: Delete all animals belonging to a specific farm
+      parameters:
+        - name: farmName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Number of deleted animals
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deleted]
+                properties:
+                  deleted:
+                    type: integer
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /animals/{id}:
     get:
       operationId: getAnimal

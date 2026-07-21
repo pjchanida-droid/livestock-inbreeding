@@ -16,6 +16,7 @@ export * from './animalSex';
 export * from './animalUpdate';
 export * from './animalUpdateSex';
 export * from './commonAncestor';
+export * from './deleteAnimalsByFarm200';
 export * from './errorResponse';
 export * from './healthStatus';
 export * from './importResult';

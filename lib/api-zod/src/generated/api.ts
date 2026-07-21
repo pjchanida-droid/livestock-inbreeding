@@ -75,6 +75,18 @@ export const ListFarmsResponse = zod.array(ListFarmsResponseItem)
 
 
 /**
+ * @summary Delete all animals belonging to a specific farm
+ */
+export const DeleteAnimalsByFarmParams = zod.object({
+  "farmName": zod.coerce.string()
+})
+
+export const DeleteAnimalsByFarmResponse = zod.object({
+  "deleted": zod.number()
+})
+
+
+/**
  * @summary Get an animal by ID
  */
 export const GetAnimalParams = zod.object({
