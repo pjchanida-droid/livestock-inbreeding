@@ -117,73 +117,127 @@ router.post("/animals/import", upload.single("file"), async (req, res) => {
     let skipped = 0;
     const errors: string[] = [];
 
-    // Two-pass: first insert animals without parents, then link parents
-    const pending: Array<{ row: Record<string, unknown>; attempt: number }> = rows.map((r) => ({ row: r, attempt: 0 }));
-    const maxPasses = 5;
+    // --- Step 1: Validate and collect valid rows ---
+    interface ParsedRow {
+      code: string;
+      sireCode: string;
+      damCode: string;
+      sex: "male" | "female";
+      species: string;
+      name: string;
+      farm: string | null;
+    }
+    const validRows = new Map<string, ParsedRow>();
 
-    for (let pass = 0; pass < maxPasses && pending.length > 0; pass++) {
-      const remaining: typeof pending = [];
-      for (const { row, attempt } of pending) {
-        const code = String(row["Animal_ID"] || "").trim();
-        const sireCode = String(row["Sire_ID"] || "Unknown").trim();
-        const damCode = String(row["Dam_ID"] || "Unknown").trim();
-        const sexRaw = String(row["Sex"] || "").trim().toUpperCase();
-        const sex = sexRaw === "M" ? "male" : sexRaw === "F" ? "female" : null;
+    for (const row of rows) {
+      const code = String(row["Animal_ID"] || "").trim();
+      const sireCode = String(row["Sire_ID"] || "Unknown").trim() || "Unknown";
+      const damCode = String(row["Dam_ID"] || "Unknown").trim() || "Unknown";
+      const sexRaw = String(row["Sex"] || "").trim().toUpperCase();
+      const sex = sexRaw === "M" ? "male" : sexRaw === "F" ? "female" : null;
 
-        if (!code || code === "Unknown") {
-          errors.push(`แถว: รหัส Animal_ID ไม่ถูกต้อง`);
-          skipped++;
-          continue;
-        }
-        if (!sex) {
-          errors.push(`${code}: เพศไม่ถูกต้อง (ต้องเป็น M หรือ F)`);
-          skipped++;
-          continue;
-        }
-        if (codeToId.has(code)) {
-          skipped++;
-          continue;
-        }
-
-        const sireId = sireCode !== "Unknown" ? (codeToId.get(sireCode) ?? null) : null;
-        const damId = damCode !== "Unknown" ? (codeToId.get(damCode) ?? null) : null;
-
-        // If parents not yet resolved and not final pass, defer
-        const sireUnresolved = sireCode !== "Unknown" && !codeToId.has(sireCode);
-        const damUnresolved = damCode !== "Unknown" && !codeToId.has(damCode);
-        if ((sireUnresolved || damUnresolved) && attempt < maxPasses - 1) {
-          remaining.push({ row, attempt: attempt + 1 });
-          continue;
-        }
-
-        const species = String(row["Species"] || "").trim() || "ไม่ระบุ";
-        const name = String(row["Status"] || row["Name"] || code).trim();
-        const farm = String(row["Farm"] || "").trim() || null;
-
-        try {
-          const [created] = await db
-            .insert(animalsTable)
-            .values({ name, code, species, sex, farm, sireId, damId })
-            .returning({ id: animalsTable.id });
-          codeToId.set(code, created.id);
-          inserted++;
-        } catch (e: any) {
-          if (e?.code === "23505" || String(e?.message).includes("UNIQUE")) {
-            skipped++;
-          } else {
-            errors.push(`${code}: ${e?.message ?? "ข้อผิดพลาดไม่ทราบสาเหตุ"}`);
-            skipped++;
-          }
-        }
+      if (!code || code === "Unknown") {
+        errors.push(`แถว: รหัส Animal_ID ไม่ถูกต้อง`);
+        skipped++;
+        continue;
       }
-      pending.length = 0;
-      pending.push(...remaining);
+      if (!sex) {
+        errors.push(`${code}: เพศไม่ถูกต้อง (ต้องเป็น M หรือ F)`);
+        skipped++;
+        continue;
+      }
+      if (codeToId.has(code)) {
+        skipped++;
+        continue;
+      }
+      if (validRows.has(code)) {
+        skipped++; // duplicate in file
+        continue;
+      }
+      validRows.set(code, {
+        code,
+        sireCode,
+        damCode,
+        sex,
+        species: String(row["Species"] || "").trim() || "ไม่ระบุ",
+        name: String(row["Status"] || row["Name"] || code).trim(),
+        farm: String(row["Farm"] || "").trim() || null,
+      });
     }
 
-    // Any still-pending = unresolvable parents
-    for (const { row } of pending) {
-      errors.push(`${row["Animal_ID"]}: ไม่พบรหัสพ่อ/แม่พันธุ์ในระบบ`);
-      skipped++;
+    // --- Step 2: Topological sort (Kahn's algorithm) ---
+    // Parents that exist in file or already in DB are "resolved"
+    const inDegree = new Map<string, number>();
+    const dependents = new Map<string, string[]>(); // parent → [children]
+
+    for (const [code, r] of validRows) {
+      let deg = 0;
+      for (const parentCode of [r.sireCode, r.damCode]) {
+        if (parentCode === "Unknown") continue;
+        if (codeToId.has(parentCode)) continue; // already in DB → resolved
+        if (!validRows.has(parentCode)) continue; // not in file → treat as unresolvable (insert without)
+        // parent is in this file and not yet in DB
+        deg++;
+        if (!dependents.has(parentCode)) dependents.set(parentCode, []);
+        dependents.get(parentCode)!.push(code);
+      }
+      inDegree.set(code, deg);
+    }
+
+    // Queue: animals whose parents are all resolved
+    const queue: string[] = [];
+    for (const [code, deg] of inDegree) {
+      if (deg === 0) queue.push(code);
+    }
+
+    const insertOrder: string[] = [];
+    while (queue.length > 0) {
+      const code = queue.shift()!;
+      insertOrder.push(code);
+      for (const child of dependents.get(code) ?? []) {
+        const newDeg = (inDegree.get(child) ?? 1) - 1;
+        inDegree.set(child, newDeg);
+        if (newDeg === 0) queue.push(child);
+      }
+    }
+
+    // Animals not reached = circular dependency → insert without parents
+    for (const code of validRows.keys()) {
+      if (!insertOrder.includes(code)) {
+        errors.push(`${code}: พ่อ/แม่อ้างอิงวนซ้ำ (circular) — บันทึกโดยไม่มีข้อมูลพ่อ/แม่`);
+        insertOrder.push(code);
+      }
+    }
+
+    // --- Step 3: Insert in topological order ---
+    for (const code of insertOrder) {
+      const r = validRows.get(code)!;
+      const sireId = r.sireCode !== "Unknown" ? (codeToId.get(r.sireCode) ?? null) : null;
+      const damId  = r.damCode  !== "Unknown" ? (codeToId.get(r.damCode)  ?? null) : null;
+
+      // Warn if parent was in file but still not resolved (unresolvable reference)
+      if (r.sireCode !== "Unknown" && !codeToId.has(r.sireCode) && validRows.has(r.sireCode)) {
+        errors.push(`${code}: ไม่สามารถเชื่อมพ่อพันธุ์ ${r.sireCode}`);
+      }
+      if (r.damCode !== "Unknown" && !codeToId.has(r.damCode) && validRows.has(r.damCode)) {
+        errors.push(`${code}: ไม่สามารถเชื่อมแม่พันธุ์ ${r.damCode}`);
+      }
+
+      try {
+        const [created] = await db
+          .insert(animalsTable)
+          .values({ name: r.name, code, species: r.species, sex: r.sex, farm: r.farm, sireId, damId })
+          .returning({ id: animalsTable.id });
+        codeToId.set(code, created.id);
+        inserted++;
+      } catch (e: any) {
+        if (e?.code === "23505" || String(e?.message).includes("UNIQUE")) {
+          skipped++;
+        } else {
+          errors.push(`${code}: ${e?.message ?? "ข้อผิดพลาดไม่ทราบสาเหตุ"}`);
+          skipped++;
+        }
+      }
     }
 
     return res.json({ inserted, skipped, errors });
