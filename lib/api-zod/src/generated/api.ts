@@ -39,6 +39,7 @@ export const ListAnimalsResponseItem = zod.object({
   "damName": zod.string().nullish(),
   "damCode": zod.string().nullish(),
   "fCoefficient": zod.number().nullish().describe('Animal\'s own inbreeding coefficient'),
+  "isActive": zod.boolean().optional().describe('Whether the animal is currently active in the system'),
   "createdAt": zod.string()
 })
 export const ListAnimalsResponse = zod.array(ListAnimalsResponseItem)
@@ -61,7 +62,8 @@ export const CreateAnimalBody = zod.object({
   "birthDate": zod.string().optional(),
   "notes": zod.string().optional(),
   "sireId": zod.number().nullish(),
-  "damId": zod.number().nullish()
+  "damId": zod.number().nullish(),
+  "isActive": zod.boolean().optional()
 })
 
 
@@ -95,6 +97,7 @@ export const GetAnimalResponse = zod.object({
   "damName": zod.string().nullish(),
   "damCode": zod.string().nullish(),
   "fCoefficient": zod.number().nullish().describe('Animal\'s own inbreeding coefficient'),
+  "isActive": zod.boolean().optional().describe('Whether the animal is currently active in the system'),
   "createdAt": zod.string()
 })
 
@@ -118,7 +121,8 @@ export const UpdateAnimalBody = zod.object({
   "birthDate": zod.string().optional(),
   "notes": zod.string().optional(),
   "sireId": zod.number().nullish(),
-  "damId": zod.number().nullish()
+  "damId": zod.number().nullish(),
+  "isActive": zod.boolean().optional()
 })
 
 export const UpdateAnimalResponse = zod.object({
@@ -137,6 +141,7 @@ export const UpdateAnimalResponse = zod.object({
   "damName": zod.string().nullish(),
   "damCode": zod.string().nullish(),
   "fCoefficient": zod.number().nullish().describe('Animal\'s own inbreeding coefficient'),
+  "isActive": zod.boolean().optional().describe('Whether the animal is currently active in the system'),
   "createdAt": zod.string()
 })
 

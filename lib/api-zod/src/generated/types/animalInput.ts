@@ -22,4 +22,5 @@ export interface AnimalInput {
   sireId?: number | null;
   /** @nullable */
   damId?: number | null;
+  isActive?: boolean;
 }

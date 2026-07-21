@@ -25,6 +25,7 @@ export function initDb(): void {
       notes TEXT,
       sire_id INTEGER REFERENCES animals(id) ON DELETE SET NULL,
       dam_id INTEGER REFERENCES animals(id) ON DELETE SET NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
     );
     CREATE TABLE IF NOT EXISTS inbreeding_history (
@@ -36,6 +37,12 @@ export function initDb(): void {
       calculated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
     );
   `);
+
+  // Migration: add is_active column to existing databases
+  const cols = sqlite.prepare("PRAGMA table_info(animals)").all() as { name: string }[];
+  if (!cols.some((c) => c.name === "is_active")) {
+    sqlite.exec("ALTER TABLE animals ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1");
+  }
 }
 
 export const db = drizzle(

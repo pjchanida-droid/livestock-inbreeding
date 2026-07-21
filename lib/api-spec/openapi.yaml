@@ -329,6 +329,9 @@ components:
         fCoefficient:
           type: ["number", "null"]
           description: Animal's own inbreeding coefficient
+        isActive:
+          type: boolean
+          description: Whether the animal is currently active in the system
         createdAt:
           type: string
 
@@ -358,6 +361,8 @@ components:
           type: ["integer", "null"]
         damId:
           type: ["integer", "null"]
+        isActive:
+          type: boolean
 
     AnimalUpdate:
       type: object
@@ -382,6 +387,8 @@ components:
           type: ["integer", "null"]
         damId:
           type: ["integer", "null"]
+        isActive:
+          type: boolean
 
     PedigreeNode:
       type: object

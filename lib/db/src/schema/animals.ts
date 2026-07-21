@@ -13,6 +13,7 @@ export const animalsTable = sqliteTable("animals", {
   notes: text("notes"),
   sireId: integer("sire_id").references((): AnySQLiteColumn => animalsTable.id, { onDelete: "set null" }),
   damId: integer("dam_id").references((): AnySQLiteColumn => animalsTable.id, { onDelete: "set null" }),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
 });
 

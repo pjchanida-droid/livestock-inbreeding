@@ -36,5 +36,7 @@ export interface Animal {
      * @nullable
      */
   fCoefficient?: number | null;
+  /** Whether the animal is currently active in the system */
+  isActive?: boolean;
   createdAt: string;
 }

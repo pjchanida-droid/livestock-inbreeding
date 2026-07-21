@@ -86,10 +86,10 @@ router.get("/animals/farms", async (req, res) => {
 router.get("/animals/template", (_req, res) => {
   const wb = XLSX.utils.book_new();
   const data = [
-    ["Farm", "Animal_ID", "Sire_ID", "Dam_ID", "Sex", "Species", "Status"],
-    ["ฟาร์มวิจัย A", "M01", "Unknown", "Unknown", "M", "โคนม", "พ่อพันธุ์"],
-    ["ฟาร์มวิจัย A", "F01", "Unknown", "Unknown", "F", "โคนม", "แม่พันธุ์"],
-    ["ฟาร์มวิจัย A", "C01", "M01", "F01", "M", "โคนม", "ลูกผสม"],
+    ["Farm", "Animal_ID", "Sire_ID", "Dam_ID", "Sex", "Species", "Status", "Active"],
+    ["ฟาร์มวิจัย A", "M01", "Unknown", "Unknown", "M", "กระบือ", "พ่อพันธุ์", "อยู่ในระบบ"],
+    ["ฟาร์มวิจัย A", "F01", "Unknown", "Unknown", "F", "กระบือ", "แม่พันธุ์", "อยู่ในระบบ"],
+    ["ฟาร์มวิจัย A", "C01", "M01", "F01", "M", "กระบือ", "ลูกผสม", "ไม่อยู่ในระบบ"],
   ];
   const ws = XLSX.utils.aoa_to_sheet(data);
   XLSX.utils.book_append_sheet(wb, ws, "Pedigree");
@@ -126,6 +126,7 @@ router.post("/animals/import", upload.single("file"), async (req, res) => {
       species: string;
       name: string;
       farm: string | null;
+      isActive: boolean;
     }
     const validRows = new Map<string, ParsedRow>();
 
@@ -154,6 +155,8 @@ router.post("/animals/import", upload.single("file"), async (req, res) => {
         skipped++; // duplicate in file
         continue;
       }
+      const activeRaw = String(row["Active"] || "").trim();
+      const isActive = activeRaw === "ไม่อยู่ในระบบ" ? false : true;
       validRows.set(code, {
         code,
         sireCode,
@@ -162,6 +165,7 @@ router.post("/animals/import", upload.single("file"), async (req, res) => {
         species: String(row["Species"] || "").trim() || "ไม่ระบุ",
         name: String(row["Status"] || row["Name"] || code).trim(),
         farm: String(row["Farm"] || "").trim() || null,
+        isActive,
       });
     }
 
@@ -226,7 +230,7 @@ router.post("/animals/import", upload.single("file"), async (req, res) => {
       try {
         const [created] = await db
           .insert(animalsTable)
-          .values({ name: r.name, code, species: r.species, sex: r.sex, farm: r.farm, sireId, damId })
+          .values({ name: r.name, code, species: r.species, sex: r.sex, farm: r.farm, sireId, damId, isActive: r.isActive })
           .returning({ id: animalsTable.id });
         codeToId.set(code, created.id);
         inserted++;

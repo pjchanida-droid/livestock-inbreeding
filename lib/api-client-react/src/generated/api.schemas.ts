@@ -46,6 +46,8 @@ export interface Animal {
      * @nullable
      */
   fCoefficient?: number | null;
+  /** Whether the animal is currently active in the system */
+  isActive?: boolean;
   createdAt: string;
 }
 
@@ -72,6 +74,7 @@ export interface AnimalInput {
   sireId?: number | null;
   /** @nullable */
   damId?: number | null;
+  isActive?: boolean;
 }
 
 export type AnimalUpdateSex = typeof AnimalUpdateSex[keyof typeof AnimalUpdateSex];
@@ -95,6 +98,7 @@ export interface AnimalUpdate {
   sireId?: number | null;
   /** @nullable */
   damId?: number | null;
+  isActive?: boolean;
 }
 
 export interface PedigreeNode {
