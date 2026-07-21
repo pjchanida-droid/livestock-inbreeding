@@ -20,8 +20,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <Dna className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="font-bold text-lg text-sidebar-foreground leading-tight">ระบบคำนวณ</h1>
-            <p className="text-[11px] text-sidebar-foreground/50">อัตราเลือดชิด · Inbreeding Calculator</p>
+            <h1 className="font-bold text-lg text-sidebar-foreground leading-tight">Inbreeding Cal.</h1>
+            <p className="text-[11px] text-sidebar-foreground/50">ระบบคำนวณอัตราเลือดชิด</p>
           </div>
         </div>
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
@@ -47,7 +47,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           })}
         </nav>
         <div className="p-4 border-t border-sidebar-border text-[10px] text-center text-sidebar-foreground/40">
-          ระบบคำนวณอัตราเลือดชิด · Livestock Inbreeding System
+          Inbreeding Cal. · Livestock Inbreeding System
         </div>
       </aside>
 
